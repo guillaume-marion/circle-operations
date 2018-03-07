@@ -40,10 +40,11 @@ class ppoint(np.ndarray):
         self[:,1:2] = value
         
     def __str__(self):
-        return str(self.__class__.__name__)+"(\n{:>10}\n)".format(repr(self))
+        return str(np.array(self))
     
     def __repr__(self):
-        return str(np.array(self))
+        return str(self.__class__.__name__)+"(\n{:>10}\n)".format(str(np.array(self)))
+        
     
     @classmethod
     def toPoint(cls,point_ppoint_listOfPoints_listOfPPoints):
