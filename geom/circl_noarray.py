@@ -10,6 +10,10 @@ from itertools import chain
 
 
 class ppoint:
+	'''
+	This is the first trial where the ppoint class was not built on top of the numpy.ndarray.
+	Downstream it required a lot of map() usage forcing the re-evaluation of the class' basic structure.
+	'''
     
     def __init__(self,x_coordinate,y_coordinate):
         self.x = x_coordinate
@@ -156,47 +160,5 @@ class ccircle(ppoint):
         # If None, the circles do not all intersect into one area
         # If != None, calculate the intersecting Area based on "polygon of intersecting points" + "intersectCords"
         a=1
-    
-
-points_list = [c1,c2,c3,c4]
-n_points = len(points_list)
-points_list_ordened = []
-[c.y for c in points_list]==
-while points_list_ordened < 3:
-    
-
-
-c1 = ccircle(6,12,2)
-c2 = ccircle(8,12,2)
-c3 = ccircle(6,10,2)
-c4 = ccircle(8,10,2)
-
-intersectPoints = c1.intersect([c2,c3,c4])
-
-print(
-    intersectPoints
-)
-    
-fig,ax = plt.subplots()
-ax.set_xlim((0, 20))
-ax.set_ylim((0, 20))
-plt.grid(b=True, which='major', color='grey', linestyle='--')
-plt.xticks(np.arange(0, 21, 2.0))
-plt.yticks(np.arange(0, 21, 2.0))
-for cplot in [c1,c2,c3,c4]:
-    c = plt.Circle((cplot.x,cplot.y), cplot.r, color='blue', fill=False)
-    ax.add_artist(c)
-    
-#plt.scatter(p1[0],p1[1], c='red')
-plt.scatter(intersectPoints[0][0],intersectPoints[0][1], c='red')
-plt.scatter(intersectPoints[1][0],intersectPoints[1][1], c='red')
-plt.scatter(intersectPoints[2][0],intersectPoints[2][1], c='red')
-plt.scatter(intersectPoints[3][0],intersectPoints[3][1], c='red')
-plt.scatter(intersectPoints[4][0],intersectPoints[4][1], c='red')
-plt.scatter(intersectPoints[5][0],intersectPoints[5][1], c='red')
-
-
-c1.intersectCord(c2)
-
 
 
