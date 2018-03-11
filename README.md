@@ -1,11 +1,11 @@
 # Circle Operations
 
 This repository implements basic point/circle operations in a series of classes and methods.
-Final goal is to create a method to calculate total area of overlapping circles (while overlapping areas are included only once).
+The original goal was to create a method to calculate total area of overlapping circles (while overlapping areas would be included only once).
 
 ## Functionalities
 
-Some examples of the classes' functionalities:
+Some examples of the classes' methods that were needed to achieve the above:
 
 * Distance
 * Centroid
@@ -18,10 +18,8 @@ Some examples of the classes' functionalities:
 
 ## Numpy superclass
 
-The classes are built on top of numpy.ndarrays with the purpose to make most methods vectorized.
+The classes are built on top of numpy.ndarrays with the purpose to make most methods vectorized, making the code work a bit more complex but easier to execute.
 
-## To Do
+## More info
 
-* Intersection of 3+ circles
-* Overlapping manager
-
+Refer to the jupyter notebook for a detailed step-by-step explanation of the whole process.

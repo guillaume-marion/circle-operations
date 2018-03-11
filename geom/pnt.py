@@ -44,7 +44,6 @@ class ppoint(np.ndarray):
     
     def __repr__(self):
         return str(self.__class__.__name__)+"(\n{:>10}\n)".format(str(np.array(self)))
-        
     
     @classmethod
     def toPoint(cls,point_ppoint_listOfPoints_listOfPPoints):
@@ -60,10 +59,13 @@ class ppoint(np.ndarray):
         ppoint_out = cls(point_ppoint_listOfPoints_listOfPPoints)
         return ppoint_out
     
+    def row(self, j):
+        return self.toPoint([self[j,:]])
+    
     @classmethod
-    def random(cls, lowerlim, upperlim):
-        x = random.randint(lowerlim, upperlim)
-        y = random.randint(lowerlim, upperlim)
+    def random(cls, range_xy):
+        x = random.choice(range_xy)
+        y = random.choice(range_xy)
         return cls([x, y])
     
     @staticmethod
@@ -132,6 +134,10 @@ class ppoint(np.ndarray):
         
     @classmethod
     def polyArea(cls, point_or_list):
+        '''
+        Returns the area of polygon bounded by given points
+        Takes as input (a list of) coordinates or a (list of) ppoint(s)
+        '''
         m_ppoint = cls.toPoint(point_or_list)
         m_ppoint = m_ppoint[cls.orderedIndex(point_or_list)][:,0]
         area = cls.__polyArea__(m_ppoint)

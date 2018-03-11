@@ -3,8 +3,8 @@ from geom.pnt import ppoint
 # Library imports
 import math
 import warnings
+import random
 import numpy as np
-from itertools import chain
 
 
 class ccircle(ppoint):
@@ -37,7 +37,6 @@ class ccircle(ppoint):
     @property
     def xy(self):
         return super(ccircle, self).__new__(ppoint, self[:,:2])
-        #return np.asarray(self[:,:2])
     @xy.setter
     def xy(self, value):
         self[:,:2] = value
@@ -51,6 +50,13 @@ class ccircle(ppoint):
         # For read-continuity between class and instance methods
         ccircle_out = cls(circle_ccircle_listOfCircles_listOfCcircles)
         return ccircle_out
+
+    @classmethod
+    def random(cls, range_xy, range_radius):
+        x = random.choice(range_xy)
+        y = random.choice(range_xy)
+        r = random.choice(range_radius)
+        return cls([x, y, r])
     
     @staticmethod
     def __area__(m_ccircle):
@@ -96,8 +102,9 @@ class ccircle(ppoint):
         '''
         m_ccircle = self.toCircle(circle_or_list)
         distance = self.distance(circle_or_list)
-        return self.__intersect__(self, m_ccircle, distance)
-
+        intersects = self.__intersect__(self, m_ccircle, distance)
+        return super(ccircle, self).__new__(ppoint, intersects)
+    
     ######################################################################
     ### WIP ##############################################################
     ###     ##############################################################
@@ -108,6 +115,7 @@ class ccircle(ppoint):
     ####   ###############################################################
     ##### ################################################################
     ######################################################################
+    
     def intersectCord(cls,circle_2):
         d = cls.distance(circle_2)
         r0 = cls.r
@@ -143,10 +151,6 @@ class ccircle(ppoint):
     
     #@classmethod
     #def intersectAll(cls,circles_list,contained_by_all=True):
-    
-    def polygonArea(point_list):
-        # Area of 3 or more points
-        a=1
     
     def multiIntersectArea(cls,circles_list):
         # to do: Identify all intersection points 
