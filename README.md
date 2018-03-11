@@ -23,3 +23,9 @@ The classes are built on top of numpy.ndarrays with the purpose to make most met
 ## More info
 
 Refer to the jupyter notebook for a detailed step-by-step explanation of the whole process.
+
+## To do:
+
+* Combining the different method to achieve the final goal
+* Adding examples to jupyter notebook
+* Some cleaning up and adding comments
