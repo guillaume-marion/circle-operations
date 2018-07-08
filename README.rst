@@ -1,6 +1,7 @@
-.. image:: images/circles_icon_50p.png
-	:width: 200px
-	:align: left
+.. class:: no-web
+
+    .. image:: images/circles_icon.png
+        :width: 400px
 
 =================
 Circle Operations
