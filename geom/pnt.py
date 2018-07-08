@@ -51,32 +51,15 @@ class Point(np.ndarray):
     
     @property
     def x(self):
-        '''
-        Calling x/y will always return the x/y value(s), either of the 
-            single Point or the multiple Point (e.g. a.x == np.array([5]) and
-                                                     b.x == np.array([5,13])).
-        '''
         return np.asarray(self[:,:1])
-    
     @x.setter
     def x(self, value):
-        '''
-        See comment for x property.
-        '''
-        self[:,:1] = value
-        
+        self[:,:1] = value    
     @property
     def y(self):
-        '''
-        See comment for x property.
-        '''
         return np.asarray(self[:,1:2])
-    
     @y.setter
     def y(self, value):
-        '''
-        See comment for x property.
-        '''
         self[:,1:2] = value
         
     def __getitem__(self,val):
@@ -106,6 +89,7 @@ class Point(np.ndarray):
         return (str(self.__class__.__name__)+"([\n {:>10}\n])"
                 .format(self.__str__()[1:-1]))
     
+    
     @staticmethod
     def _distance(s_point, m_point):
         '''
@@ -114,7 +98,7 @@ class Point(np.ndarray):
             m_point: a single or multiple sets of xy-coordinates as a
                 numpy.ndarray
         
-        Returns: The euclidean distance(s) between the s_point and m_point as 
+        Returns: the euclidean distance(s) between the s_point and m_point as 
             a numpy.ndarray
         '''
         return np.sqrt((m_point.x-s_point.x)**2+(m_point.y-s_point.y)**2)
@@ -125,7 +109,7 @@ class Point(np.ndarray):
             point_or_list: a list or numpy array of single/multiple 
                 xy-coordinates or a (list of) Point(s).
         
-        Returns: The euclidean distance(s) to the origin and the (multiple) 
+        Returns: the euclidean distance(s) between the origin and the (multiple) 
             point(s) as a numpy.ndarray.
         '''
         m_point = self._rePoint(point_or_list) 
@@ -227,4 +211,3 @@ class Point(np.ndarray):
         m_point_ordered = m_point[cls.orderedIndex(point_or_list)][:,0]
         area = cls._polyArea(m_point_ordered)
         return area
-    

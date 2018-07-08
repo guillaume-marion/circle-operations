@@ -9,73 +9,74 @@ import numpy as np
 
 class Circle(Point):
     '''
-    A Circle is constructed on top of a Point with a radius as supplementary parameter
-    A Circle can be:
-    - single: a = Circle([5,7,1])
-    - multiple: b = Circle([[5,7,1],[13,4,1]])
-    
-    Calling x (,y or r) will always return the x (y, or r) values, either of the 
-    single Circle or the multiple Circle (e.g. a.x == np.array([5]) and
-                                                 b.x == np.array([5,13])
-                                           )
+    The Circle class is a child class of the Point. It includes a
+        number of methods which can be used to calculate metrics between sets 
+        of coordinates+radius such as intersections, etc.
+    Note the difference in notation between:
+        - 'circle' which at least represent a set of coordinates+radius
+        - 'Circle' which is an instance of the class
     '''
+    
     def __new__(cls, inputarray):
+        '''
+        A Circle can be created from a single set of coordinates or multiple:
+        - single: a = Circle([5,7,1])
+        - multiple: b = Circle([[5,7,1],[13,4,1]])  
+        '''
         obj = np.asarray(inputarray).view(cls)
         try:
-            obj - np.asarray([1, 2, 3])
+            obj - np.asarray([1, 1, 1])
             obj = obj.reshape(-1, 3)
             return obj
         except:
-            raise ValueError("Input should be a (3,) or (*,3) array") 
+            raise ValueError("The input should have the shape of a (3,) or (*,3) array") 
+    
+    @classmethod
+    def random(cls, range_xy, range_radius):
+        '''
+        Random instance of a Circle
+        '''
+        x = random.choice(range_xy)
+        y = random.choice(range_xy)
+        r = random.choice(range_radius)
+        return cls([x, y, r])
+    
+    @classmethod
+    def _reCircle(cls,circle_Circle_listOfCircles_listOfCircles):
+        '''
+        Wraps the class instantiation. To be used for:
+            - allowing multiple input types in certain methods
+            - instantiating certain method outputs as a Point
+        '''
+        # For read-continuity between class and instance methods
+        Circle_out = cls(circle_Circle_listOfCircles_listOfCircles)
+        return Circle_out
     
     @property
     def r(self):
         return np.asarray(self[:,2:])
     @r.setter
     def r(self, value):
-        self[:,2:] = value
+        self[:,2:] = value    
     @property
     def xy(self):
         return super(Circle, self).__new__(Point, self[:,:2])
     @xy.setter
     def xy(self, value):
         self[:,:2] = value
-
-    @classmethod
-    def toCircle(cls,circle_Circle_listOfCircles_listOfCircles):
-        '''
-        Simply wraps the instance creation for readability.
-        Refer to Point.toPoint
-        '''
-        # For read-continuity between class and instance methods
-        Circle_out = cls(circle_Circle_listOfCircles_listOfCircles)
-        return Circle_out
-
-    @classmethod
-    def random(cls, range_xy, range_radius):
-        x = random.choice(range_xy)
-        y = random.choice(range_xy)
-        r = random.choice(range_radius)
-        return cls([x, y, r])
     
-    @staticmethod
-    def __area__(m_Circle):
-        return math.pi*m_Circle.r**2
     
     def area(self):
         '''
-        Returns the area of (a) circle(s)
-        Can be applied on single or mutiple Circle, e.g.:
-            Circle([4,5,1]).area()
-            Circle([[4,5,1],[9,5,6]]).area()
+        Returns: the area(s) as a numpy.ndarray
         '''
-        return self.__area__(self)
+        return math.pi*self.r**2
       
     @staticmethod
-    def __intersect__(s_Circle, m_Circle, distance):
+    def _intersect(s_circle, m_circle, distance):
         d = distance
-        r0 = s_Circle.r
-        r1 = m_Circle.r
+        r0 = s_circle.r
+        r1 = m_circle.r
         inf_intersects = ((d==0) & (r0==r1))
         if inf_intersects.sum()>0:
             raise OverflowError('tangent circles')
@@ -88,8 +89,8 @@ class Circle(Point):
         a[mask]=np.nan
         sqrt_v = np.vectorize(math.sqrt)
         h = sqrt_v(r0**2-a**2)
-        summand_1 = s_Circle.xy+a*(m_Circle.xy-s_Circle.xy)/d
-        diff = m_Circle.xy-s_Circle.xy
+        summand_1 = s_circle.xy+a*(m_circle.xy-s_circle.xy)/d
+        diff = m_circle.xy-s_circle.xy
         summand_2 = (h*(diff)/d)[:,::-1]
         intersects_1 = summand_1+summand_2*np.array([[-1,1]])
         intersects_2 = summand_1+summand_2*np.array([[1,-1]])
@@ -100,9 +101,9 @@ class Circle(Point):
         Returns the intersecting point(s) with (an)other circle(s)
         Takes as input (a list of) coordinates or a (list of) Circle(s)
         '''
-        m_Circle = self.toCircle(circle_or_list)
+        m_circle = self._reCircle(circle_or_list)
         distance = self.distance(circle_or_list)
-        intersects = self.__intersect__(self, m_Circle, distance)
+        intersects = self._intersect(self, m_circle, distance)
         return super(Circle, self).__new__(Point, intersects)
     
     ######################################################################

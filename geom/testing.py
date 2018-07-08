@@ -43,10 +43,10 @@ Point.polyArea([[6,12],[8,10],[6,10]])
 
 ############################
 ### Developing intersect ###
-c1 = ccircle([6,12,4])
-c2 = ccircle([10,12,4])
-c3 = ccircle([6,8,4])
-c4 = ccircle([10,8,4])
+c1 = Circle([6,12,4])
+c2 = Circle([10,12,4])
+c3 = Circle([6,8,4])
+c4 = Circle([10,8,4])
 clist = [c1,c2,c3,c4]
 
 
@@ -64,11 +64,10 @@ for c in clist:
 intersectpoints = c1.intersect(clist[1:])
 #plt.scatter(intersectpoints.x, intersectpoints.y)
 for p in intersectpoints: #np.array(intersectpoints).reshape(-1,2):
-    intplot = plt.scatter(p[0],p[1])
+    intplot = plt.scatter(p.x,p.y)
     ax.add_artist(intplot)
 ### Inspection ###
 ##################
-
 
 
 

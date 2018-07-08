@@ -7,9 +7,9 @@ The *original goal* was to create a function that calculates total area of overl
 It became quickly clear however that a more structured approach was needed. 
 Basic example usage::
 
-    from geom.circl import ccircle
+    from geom.circl import Circle
 	
-    if ccircle([4,10,1]).distance([6,10,1]) != 2:
+    if Circle([4,10,1]).distance([6,10,1]) != 2:
 	    raise ValueError
 
 	
