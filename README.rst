@@ -1,6 +1,6 @@
 .. class:: no-web
     .. image:: images/circles_icon.png
-        :width: 1%
+        :width: 10%
 
 =================
 Circle Operations
