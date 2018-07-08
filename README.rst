@@ -1,4 +1,4 @@
-.. image:: images/circles_icon.png
+.. image:: images/circles_icon_50p.png
 	:width: 200px
 	:align: left
 
