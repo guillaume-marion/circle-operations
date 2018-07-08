@@ -1,5 +1,5 @@
 .. image:: images/circles_icon.png
-	:width: 200
+	:width: 200px
 	:align: left
 
 =================
