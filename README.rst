@@ -1,8 +1,6 @@
+=================
 .. image:: images/circles_icon_3c.png
     :width: 200
-
-=================
-Circle Operations
 =================
 
 This repository implements basic circle operations in a couple of classes and methods. 
