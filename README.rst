@@ -1,5 +1,5 @@
 .. image:: images/circles_icon.png
-	:width: 1%
+    :width: 200
 
 =================
 Circle Operations
