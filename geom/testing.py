@@ -3,11 +3,11 @@ from matplotlib import pyplot as plt
 ######################
 ### stability test ###
 # Test initiation
-sp1 = ppoint([6,12])
-sp2 = ppoint([8,10])
-sp3 = ppoint([6,10])
-mp1 = ppoint([sp1,sp2])
-mp2 = ppoint([sp2,sp3])
+sp1 = Point([6,12])
+sp2 = Point([8,10])
+sp3 = Point([6,10])
+mp1 = Point([sp1,sp2])
+mp2 = Point([sp2,sp3])
 # Test __repr__
 sp1
 mp1
@@ -16,13 +16,13 @@ print(sp1)
 print(mp1)
 # Test setter
 sp1.x=7
-if (sp1 == ppoint([7,12])).sum()<2:
+if (sp1 == Point([7,12])).sum()<2:
     raise ValueError
-sp1 = ppoint([6,12])
+sp1 = Point([6,12])
 mp2.x=np.array([[9],[7]])
-if (mp2 == ppoint([[9,10],[7,10]])).sum()<4:
+if (mp2 == Point([[9,10],[7,10]])).sum()<4:
     raise ValueError
-mp2 = ppoint([sp2,sp3])
+mp2 = Point([sp2,sp3])
 # Test method
 sp1.distance(sp2)
 sp1.distance([sp2])
@@ -30,8 +30,8 @@ sp1.distance([5,4])
 sp1.distance([mp2])
 sp1.distance([[6,5],[9,2]])
 
-ppoint.polyArea([sp1,sp2,sp3])
-ppoint.polyArea([[6,12],[8,10],[6,10]])
+Point.polyArea([sp1,sp2,sp3])
+Point.polyArea([[6,12],[8,10],[6,10]])
 ### stability test ###
 ######################
 
@@ -50,7 +50,6 @@ c4 = ccircle([10,8,4])
 clist = [c1,c2,c3,c4]
 
 
-
 fig,ax = plt.subplots()
 ax.set_xlim((0, 20))
 ax.set_ylim((0, 20))
@@ -63,10 +62,15 @@ for c in clist:
     
 
 intersectpoints = c1.intersect(clist[1:])
-for p in np.array(intersectpoints).reshape(-1,2):
+#plt.scatter(intersectpoints.x, intersectpoints.y)
+for p in intersectpoints: #np.array(intersectpoints).reshape(-1,2):
     intplot = plt.scatter(p[0],p[1])
     ax.add_artist(intplot)
 ### Inspection ###
 ##################
+
+
+
+
 
 

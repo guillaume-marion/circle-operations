@@ -1,5 +1,5 @@
 # Local imports
-from geom.pnt import ppoint
+from geom.pnt import Point
 # Library imports
 import math
 import warnings
@@ -7,15 +7,15 @@ import random
 import numpy as np
 
 
-class ccircle(ppoint):
+class Circle(Point):
     '''
-    A ccircle is constructed on top of a ppoint with a radius as supplementary parameter
-    A ccircle can be:
-    - single: a = ccircle([5,7,1])
-    - multiple: b = ccircle([[5,7,1],[13,4,1]])
+    A Circle is constructed on top of a Point with a radius as supplementary parameter
+    A Circle can be:
+    - single: a = Circle([5,7,1])
+    - multiple: b = Circle([[5,7,1],[13,4,1]])
     
     Calling x (,y or r) will always return the x (y, or r) values, either of the 
-    single ccircle or the multiple ccircle (e.g. a.x == np.array([5]) and
+    single Circle or the multiple Circle (e.g. a.x == np.array([5]) and
                                                  b.x == np.array([5,13])
                                            )
     '''
@@ -36,20 +36,20 @@ class ccircle(ppoint):
         self[:,2:] = value
     @property
     def xy(self):
-        return super(ccircle, self).__new__(ppoint, self[:,:2])
+        return super(Circle, self).__new__(Point, self[:,:2])
     @xy.setter
     def xy(self, value):
         self[:,:2] = value
 
     @classmethod
-    def toCircle(cls,circle_ccircle_listOfCircles_listOfCcircles):
+    def toCircle(cls,circle_Circle_listOfCircles_listOfCircles):
         '''
         Simply wraps the instance creation for readability.
-        Refer to ppoint.toPoint
+        Refer to Point.toPoint
         '''
         # For read-continuity between class and instance methods
-        ccircle_out = cls(circle_ccircle_listOfCircles_listOfCcircles)
-        return ccircle_out
+        Circle_out = cls(circle_Circle_listOfCircles_listOfCircles)
+        return Circle_out
 
     @classmethod
     def random(cls, range_xy, range_radius):
@@ -59,23 +59,23 @@ class ccircle(ppoint):
         return cls([x, y, r])
     
     @staticmethod
-    def __area__(m_ccircle):
-        return math.pi*m_ccircle.r**2
+    def __area__(m_Circle):
+        return math.pi*m_Circle.r**2
     
     def area(self):
         '''
         Returns the area of (a) circle(s)
-        Can be applied on single or mutiple ccircle, e.g.:
-            ccircle([4,5,1]).area()
-            ccircle([[4,5,1],[9,5,6]]).area()
+        Can be applied on single or mutiple Circle, e.g.:
+            Circle([4,5,1]).area()
+            Circle([[4,5,1],[9,5,6]]).area()
         '''
         return self.__area__(self)
       
     @staticmethod
-    def __intersect__(s_ccircle, m_ccircle, distance):
+    def __intersect__(s_Circle, m_Circle, distance):
         d = distance
-        r0 = s_ccircle.r
-        r1 = m_ccircle.r
+        r0 = s_Circle.r
+        r1 = m_Circle.r
         inf_intersects = ((d==0) & (r0==r1))
         if inf_intersects.sum()>0:
             raise OverflowError('tangent circles')
@@ -88,8 +88,8 @@ class ccircle(ppoint):
         a[mask]=np.nan
         sqrt_v = np.vectorize(math.sqrt)
         h = sqrt_v(r0**2-a**2)
-        summand_1 = s_ccircle.xy+a*(m_ccircle.xy-s_ccircle.xy)/d
-        diff = m_ccircle.xy-s_ccircle.xy
+        summand_1 = s_Circle.xy+a*(m_Circle.xy-s_Circle.xy)/d
+        diff = m_Circle.xy-s_Circle.xy
         summand_2 = (h*(diff)/d)[:,::-1]
         intersects_1 = summand_1+summand_2*np.array([[-1,1]])
         intersects_2 = summand_1+summand_2*np.array([[1,-1]])
@@ -98,12 +98,12 @@ class ccircle(ppoint):
     def intersect(self, circle_or_list):
         '''
         Returns the intersecting point(s) with (an)other circle(s)
-        Takes as input (a list of) coordinates or a (list of) ccircle(s)
+        Takes as input (a list of) coordinates or a (list of) Circle(s)
         '''
-        m_ccircle = self.toCircle(circle_or_list)
+        m_Circle = self.toCircle(circle_or_list)
         distance = self.distance(circle_or_list)
-        intersects = self.__intersect__(self, m_ccircle, distance)
-        return super(ccircle, self).__new__(ppoint, intersects)
+        intersects = self.__intersect__(self, m_Circle, distance)
+        return super(Circle, self).__new__(Point, intersects)
     
     ######################################################################
     ### WIP ##############################################################

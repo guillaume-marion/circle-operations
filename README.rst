@@ -1,3 +1,6 @@
+.. image:: images/circles_icon.png
+:width: 400
+
 =================
 Circle Operations
 =================
