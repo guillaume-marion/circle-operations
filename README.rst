@@ -1,4 +1,3 @@
-=================
 .. image:: images/circles_icon_3c.png
     :width: 200
 =================
