@@ -71,5 +71,6 @@ for p in intersectpoints: #np.array(intersectpoints).reshape(-1,2):
 
 
 
-
-
+Point._rePoint([c1])
+Circle._rePoint([c1,c2,c3])
+c1.angleOffset([[6,12,4],[10,12,4],[6,8,4]])

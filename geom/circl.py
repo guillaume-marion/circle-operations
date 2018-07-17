@@ -1,5 +1,5 @@
 # Local imports
-from geom.pnt import Point
+#from geom.pnt import Point
 # Library imports
 import math
 import warnings
@@ -25,6 +25,7 @@ class Circle(Point):
         '''
         obj = np.asarray(inputarray).view(cls)
         try:
+            # Controlling for correct shape
             obj - np.asarray([1, 1, 1])
             obj = obj.reshape(-1, 3)
             return obj
@@ -42,14 +43,13 @@ class Circle(Point):
         return cls([x, y, r])
     
     @classmethod
-    def _reCircle(cls,circle_Circle_listOfCircles_listOfCircles):
+    def _reCircle(cls,something_to_instantiate):
         '''
         Wraps the class instantiation. To be used for:
             - allowing multiple input types in certain methods
             - instantiating certain method outputs as a Point
         '''
-        # For read-continuity between class and instance methods
-        Circle_out = cls(circle_Circle_listOfCircles_listOfCircles)
+        Circle_out = cls(something_to_instantiate)
         return Circle_out
     
     @property
@@ -73,39 +73,74 @@ class Circle(Point):
         return math.pi*self.r**2
       
     @staticmethod
-    def _intersect(s_circle, m_circle, distance):
+    def _intersect(s_circle_r, s_circle_xy, m_circle_r, m_circle_xy, distance):
+        '''
+        Args:
+            s_circle_r: a single set of radius as a numpy.ndarray
+            s_circle_xy: a single set of xy-coordinates as a numpy.ndarray
+            m_circle_r: a single or multiple sets of radius as a numpy.ndarray
+            m_circle_xy: a single or multiple sets of xy-coordinates as a
+                numpy.ndarray
+        
+        Returns: the xy-coordinates of the intersections points between s_circle 
+            and m_circle as a numpy.ndarray
+        '''
+        # Define necessary constants.
         d = distance
-        r0 = s_circle.r
-        r1 = m_circle.r
+        r0 = s_circle_r
+        r1 = m_circle_r
+        xy0 = s_circle_xy
+        xy1 = m_circle_xy
+        # Raise for overlapping circles.
         inf_intersects = ((d==0) & (r0==r1))
         if inf_intersects.sum()>0:
             raise OverflowError('tangent circles')
+        # Warn for non-intersecting circles.
         mask = ((d>r0+r1) | (d<abs(r0-r1)))
         if mask.sum()>0:
             warnings.warn('no intersection')
+            # If only intersecting circles are provided, return None.
             if mask.sum()==len(r1):
                 return None
+        # Compute intersections in a vectorized fashion.
         a = (r0**2-r1**2+d**2) / (2*d)
         a[mask]=np.nan
         sqrt_v = np.vectorize(math.sqrt)
         h = sqrt_v(r0**2-a**2)
-        summand_1 = s_circle.xy+a*(m_circle.xy-s_circle.xy)/d
-        diff = m_circle.xy-s_circle.xy
+        summand_1 = xy0+a*(xy1-xy0)/d
+        diff = xy1-xy0
         summand_2 = (h*(diff)/d)[:,::-1]
-        intersects_1 = summand_1+summand_2*np.array([[-1,1]])
-        intersects_2 = summand_1+summand_2*np.array([[1,-1]])
-        return intersects_1, intersects_2
+        intersect_1 = summand_1+summand_2*np.array([[-1,1]])
+        intersect_2 = summand_1+summand_2*np.array([[1,-1]])
+        return intersect_1, intersect_2
     
     def intersect(self, circle_or_list):
         '''
-        Returns the intersecting point(s) with (an)other circle(s)
-        Takes as input (a list of) coordinates or a (list of) Circle(s)
+        Args:
+            circle_or_list: a list or numpy array of single/multiple 
+                xy-coordinates+radius or a (list of) Circle(s).
+        
+        Returns: the xy-coordinates of the intersections points between the
+            origin circle and the (multiple) circle(s) as a Point
         '''
+        # Extract the necessary parameters.
+        s_circle_r = self.r
+        s_circle_xy = self.xy
         m_circle = self._reCircle(circle_or_list)
+        m_circle_r = m_circle.r
+        m_circle_xy = m_circle.xy
         distance = self.distance(circle_or_list)
-        intersects = self._intersect(self, m_circle, distance)
-        return super(Circle, self).__new__(Point, intersects)
+        # Execute the static method with above parameters.
+        intersects = self._intersect(s_circle_r=s_circle_r,
+                                     s_circle_xy=s_circle_xy,
+                                     m_circle_r=m_circle_r,
+                                     m_circle_xy=m_circle_xy,
+                                     distance=distance)
+        # Change the type of the output to a Point.
+        # We cannot use the _rePoint method as it will clash with Circle shape.
+        return super(Circle, self).__new__(Point, intersects) 
     
+        
     ######################################################################
     ### WIP ##############################################################
     ###     ##############################################################

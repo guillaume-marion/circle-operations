@@ -170,8 +170,10 @@ class Point(np.ndarray):
         '''
         m_point = cls._rePoint(point_or_list) 
         centroid = cls._centroid(m_point)
-        centroid_ppoint = cls._rePoint(centroid)
-        return centroid_ppoint
+        centroid_point = cls._rePoint(centroid) # IF METHOD IS USED ON CIRCLES WILL GIVE VALUERROR !!!
+                                                 #  SINCE _REPOINT actually _RECIRCLES... and thus
+                                                 #  excpects a (3,) or (*,3) array
+        return centroid_point
     
     @classmethod
     def orderedIndex(cls, point_or_list):
