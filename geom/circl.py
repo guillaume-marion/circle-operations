@@ -3,7 +3,6 @@
 # Library imports
 import math
 import warnings
-import random
 import numpy as np
 
 
@@ -14,7 +13,7 @@ class Circle(Point):
         of coordinates+radius such as intersections, etc.
     Note the difference in notation between:
         - 'circle' which at least represent a set of coordinates+radius
-        - 'Circle' which is an instance of the class
+        - 'Circle' which represents the class
     '''
     
     def __new__(cls, inputarray):
@@ -33,38 +32,57 @@ class Circle(Point):
             raise ValueError("The input should have the shape of a (3,) or (*,3) array") 
     
     @classmethod
-    def random(cls, range_xy, range_radius):
+    def _random(cls, x_min, x_max, y_min, y_max, radius_min, radius_max, nr_circles):
         '''
-        Random instance of a Circle
+        Args:
+            x_min: minium value for x-coordinates
+            x_max: maximum value for x-coordinates
+            y_min: minimum value for y-coordinates
+            y_max: maximum value for y-coordinates
+            radius_min: minimum value for radii
+            radius_max: maximum value for radii
+            nr_circles: number of xy-coordinates & radii to be produced
+        
+        Returns: 
+            Random xy-coordinates & radii
         '''
-        x = random.choice(range_xy)
-        y = random.choice(range_xy)
-        r = random.choice(range_radius)
-        return cls([x, y, r])
+        xy = super(Circle, cls)._random(x_min, x_max, y_min, y_max, nr_circles)
+        r = np.random.uniform(radius_min, radius_max, nr_circles)
+        xyr = np.dstack([xy,r])
+        return xyr
     
     @classmethod
-    def _reCircle(cls,something_to_instantiate):
+    def random(cls, x_min, x_max, y_min, y_max, radius_min, radius_max, nr_circles):
         '''
-        Wraps the class instantiation. To be used for:
-            - allowing multiple input types in certain methods
-            - instantiating certain method outputs as a Point
+        Args:
+            x_min: minium value for x-coordinates
+            x_max: maximum value for x-coordinates
+            y_min: minimum value for y-coordinates
+            y_max: maximum value for y-coordinates
+            radius_min: minimum value for radii
+            radius_max: maximum value for radii
+            nr_circles: number of xy-coordinates & radii to be produced
+        
+        Returns: 
+            Random instance of a Circle
         '''
-        Circle_out = cls(something_to_instantiate)
-        return Circle_out
+        xyr_values = cls._random(x_min, x_max, y_min, y_max, radius_min, radius_max, nr_circles)
+        random_circle = cls(xyr_values)
+        return random_circle
     
-    @property
-    def r(self):
-        return np.asarray(self[:,2:])
-    @r.setter
-    def r(self, value):
-        self[:,2:] = value    
     @property
     def xy(self):
         return super(Circle, self).__new__(Point, self[:,:2])
     @xy.setter
     def xy(self, value):
         self[:,:2] = value
-    
+    @property
+    def r(self):
+        return np.asarray(self[:,2:])
+    @r.setter
+    def r(self, value):
+        self[:,2:] = value    
+
     
     def area(self):
         '''
@@ -76,9 +94,9 @@ class Circle(Point):
     def _intersect(s_circle_r, s_circle_xy, m_circle_r, m_circle_xy, distance):
         '''
         Args:
-            s_circle_r: a single set of radius as a numpy.ndarray
+            s_circle_r: a single radius as a numpy.ndarray
             s_circle_xy: a single set of xy-coordinates as a numpy.ndarray
-            m_circle_r: a single or multiple sets of radius as a numpy.ndarray
+            m_circle_r: a single or multiple sets of radii as a numpy.ndarray
             m_circle_xy: a single or multiple sets of xy-coordinates as a
                 numpy.ndarray
         
@@ -126,7 +144,7 @@ class Circle(Point):
         # Extract the necessary parameters.
         s_circle_r = self.r
         s_circle_xy = self.xy
-        m_circle = self._reCircle(circle_or_list)
+        m_circle = self._reClass(circle_or_list)
         m_circle_r = m_circle.r
         m_circle_xy = m_circle.xy
         distance = self.distance(circle_or_list)
