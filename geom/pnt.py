@@ -14,6 +14,11 @@ class Point(np.ndarray):
         - 'Point' which represents the class
     '''
     
+
+      ###############################
+     #### Dunder and properties ####
+    ###############################
+    
     def __new__(cls, inputarray):
         '''
         A Point can be created from a single set of coordinates or multiple:
@@ -28,67 +33,6 @@ class Point(np.ndarray):
             return obj
         except:
             raise ValueError("The input should have the shape of a (2,) or (*,2) array.") 
-    
-    @staticmethod
-    def _random(x_min, x_max, y_min, y_max, nr_points):
-        '''
-        Args:
-            x_min: minium value for x-coordinates
-            x_max: maximum value for x-coordinates
-            y_min: minimum value for y-coordinates
-            y_max: maximum value for y-coordinates
-            nr_points: number of xy-coordinates to be produced
-        
-        Returns: 
-            Random xy-coordinates
-        '''
-        x = np.random.uniform(x_min, x_max, nr_points)
-        y = np.random.uniform(y_min, y_max, nr_points)
-        xy = np.dstack([x,y])
-        return xy
-    
-    @classmethod
-    def random(cls, x_min, x_max, y_min, y_max, nr_points):
-        '''
-        Args:
-            x_min: minium value for x-coordinates
-            x_max: maximum value for x-coordinates
-            y_min: minimum value for y-coordinates
-            y_max: maximum value for y-coordinates
-            nr_points: number of xy-coordinates to be produced
-        
-        Returns: 
-            Random instance of a Point
-        '''
-        xy_values = cls._random(x_min, x_max, y_min, y_max, nr_points)
-        random_point = cls(xy_values)
-        return random_point
-    
-    def xRange(s_point, s_point_2):
-        x_min = float(min(s_point.x, s_point_2.x))
-        x_max = float(max(s_point.x, s_point_2.x))
-        return x_min, x_max
-    
-    def lineParameters(s_point, s_point_2):
-        a = float((s_point_2.y-s_point.y)/(s_point_2.x-s_point.x))
-        b = float(s_point.y - a*s_point.x)
-        return a,b
-    
-    def populate_line(s_point, s_point_2, nr_points, jitter_sd=1):
-        a,b = lineParameters(s_point, s_point_2)
-        x_min, x_max = xRange(s_point, s_point_2)
-        x = np.random.uniform(x_min, x_max, nr_points)
-        jitter_values = np.random.normal(0, jitter_sd, nr_points)
-        y = (a*x) + b + jitter_values
-        return np.array(list(zip(x,y)))
-    
-    def populate_lines(m_point, nr_points, jitter_sd=1):
-        populated_lines = np.array([]).reshape(0,2)
-        nr_segments = len(m_point)
-        for i in range(nr_segments-1):
-            populated_line = populate_line(m_point[i], m_point[i+1], nr_points, jitter_sd)
-            populated_lines = np.append(populated_line, populated_lines, axis=0)
-        return populated_lines
     
     @classmethod
     def _reClass(cls, something_to_instantiate):
@@ -133,12 +77,6 @@ class Point(np.ndarray):
         else:
             return super(Point, self).__getitem__(val)
     
-    def __str__(self):
-        '''
-        Uses numpy's __str__ method.
-        '''
-        return super(Point, self).__str__()
-    
     def __repr__(self):
         '''
         Defines custom __repr__ method.
@@ -147,6 +85,159 @@ class Point(np.ndarray):
                 .format(self.__str__()[1:-1]))
     
     
+      ######################################
+     #### Random instantiation methods ####
+    ######################################
+    
+    @staticmethod
+    def _random(x_min, x_max, y_min, y_max, nr_points):
+        '''
+        Args:
+            x_min: minium value for x-coordinates
+            x_max: maximum value for x-coordinates
+            y_min: minimum value for y-coordinates
+            y_max: maximum value for y-coordinates
+            nr_points: number of xy-coordinates to be produced
+        
+        Returns: 
+            Random xy-coordinates
+        '''
+        x = np.random.uniform(x_min, x_max, nr_points)
+        y = np.random.uniform(y_min, y_max, nr_points)
+        xy = np.dstack([x,y])
+        return xy
+    
+    @classmethod
+    def random(cls, x_min, x_max, y_min, y_max, nr_points):
+        '''
+        Args:
+            x_min: minium value for x-coordinates
+            x_max: maximum value for x-coordinates
+            y_min: minimum value for y-coordinates
+            y_max: maximum value for y-coordinates
+            nr_points: number of xy-coordinates to be produced
+        
+        Returns: 
+            Random instance of a Point
+        '''
+        xy_values = cls._random(x_min, x_max, y_min, y_max, nr_points)
+        random_point = cls(xy_values)
+        return random_point
+    
+    @classmethod
+    def _populate_lines(cls, m_point, nr_points, jitter_sd):
+        '''
+        Args:
+            m_point: multiple Points
+            nr_points: number of points to be created for each line
+            jitter_sd: the standard deviation of the normal distribution
+                from which the jitter is sampled
+        Returns:
+            A number of randomized points between each set of Points in their 
+            given order. This allows one to populate points on the outer bound
+            of irregular geometric shapes given by the corner Points.
+        '''
+        populated_lines = np.array([]).reshape(0,2)
+        nr_segments = len(m_point)
+        
+        def _xRange(s_point, s_point_2):
+            '''
+            Args:
+                s_point: A Point
+                s_point_2: Another Point
+            Returns:
+                The minimum and maximum x-coordinates of 2 Points
+            '''
+            x_min = float(min(s_point.x, s_point_2.x))
+            x_max = float(max(s_point.x, s_point_2.x))
+            return x_min, x_max
+    
+        def _lineParameters(s_point, s_point_2):
+            '''
+            Args:
+                s_point: A Point
+                s_point_2: Another Point
+            Returns:
+                The coefficient and intercept of the line between 2 Points
+            '''
+            a = float((s_point_2.y-s_point.y)/(s_point_2.x-s_point.x))
+            b = float(s_point.y - a*s_point.x)
+            return a,b
+    
+        def _populate_line(s_point, s_point_2, nr_points, jitter_sd):
+            '''
+            Args:
+                s_point: A Point
+                s_point_2: Another Point
+                nr_points: Number of points to produce
+                jitter_sd: the standard deviation of the normal distribution
+                    from which the jitter is sampled
+            Returns:
+                Randomized points on the fitted line between 2 Points taking into
+                consideration the maximum and minimum x-coordinates of these 2
+                Points. Also some jitter (based on a normal distribution) is
+                added as vertical distance from the line.
+            '''
+            a,b = _lineParameters(s_point, s_point_2)
+            x_min, x_max = _xRange(s_point, s_point_2)
+            x = np.random.uniform(x_min, x_max, nr_points)
+            jitter_values = np.random.normal(0, jitter_sd, nr_points)
+            y = (a*x) + b + jitter_values
+            return np.array(list(zip(x,y)))
+    
+        for i in range(nr_segments-1):
+            populated_line = _populate_line(m_point[i], m_point[i+1], nr_points, jitter_sd)
+            populated_lines = np.append(populated_line, populated_lines, axis=0)
+        
+        return populated_lines
+    
+    @classmethod
+    def populate_lines(cls, m_point, nr_points, jitter_sd=1):
+        '''
+        Args:
+            m_point: multiple Points
+            nr_points: number of Points to be created for each line
+            jitter_sd: the standard deviation of the normal distribution
+                from which the jitter is sampled
+        Returns:
+            A number of randomized Points between each set of Points in their 
+            given order. This allows one to populate points on the outer bound
+            of irregular geometric shapes given by the corner Points.
+        '''
+        populated_lines = cls._populate_lines(m_point, nr_points, jitter_sd)
+        populated_lines_as_Points = Point(populated_lines)
+        
+        return populated_lines_as_Points
+
+    
+      ######################
+     #### Core methods ####
+    ######################
+
+    def drop(self, row):
+        '''
+        Args:
+            row: row-index to be dropped
+        Returns:
+            The Circle without the specified row
+        '''
+        lower_end = self[:row]
+        upper_end = self[row+1:]
+        appended = np.append(lower_end, upper_end, axis=0)
+        appended_circle = self._reClass(appended)
+        
+        return appended_circle
+    
+    def dropna(self):
+        '''
+        Returns:
+            Circle without nan values
+        '''
+        mask = np.array((np.isnan(self)==False).any(axis=1))
+        self_without_nan = self[mask,:]
+        
+        return self_without_nan
+
     @staticmethod
     def _distance(s_point_x, s_point_y, m_point_x, m_point_y):
         '''
@@ -256,6 +347,18 @@ class Point(np.ndarray):
         ordered_index = (some_angle_offsets*-1).argsort(axis=0)
         return ordered_index
 
+    def orderedPoints(self):
+        '''
+        Returns:
+            The Points in a clockwise-ordered fashion
+        '''
+        centr = self.centroid()
+        angle_offsets = centr.angleOffset(self)
+        ordered_index = self._orderedIndex(angle_offsets)
+        ordered_self = self[ordered_index][:,0]
+        
+        return ordered_self
+
     @staticmethod
     def _polyArea(m_point_ordered_x, m_point_ordered_y):
         '''
@@ -275,10 +378,7 @@ class Point(np.ndarray):
         Returns: the area of the polygon bounded by the Point instance as a numpy.ndarray
         '''
         m_point = self.xy
-        centroid_point = m_point.centroid()
-        angle_offsets = centroid_point.angleOffset(m_point)
-        ordered_index = self._orderedIndex(angle_offsets)
-        m_point_ordered = m_point[ordered_index][:,0]
+        m_point_ordered = m_point.orderedPoints()
         m_point_ordered_x = m_point_ordered.x
         m_point_ordered_y = m_point_ordered.y
         area = self._polyArea(m_point_ordered_x=m_point_ordered_x,
