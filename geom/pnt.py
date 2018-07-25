@@ -132,6 +132,7 @@ class Point(np.ndarray):
             nr_points: number of points to be created for each line
             jitter_sd: the standard deviation of the normal distribution
                 from which the jitter is sampled
+                
         Returns:
             A number of randomized points between each set of Points in their 
             given order. This allows one to populate points on the outer bound
@@ -312,6 +313,22 @@ class Point(np.ndarray):
                                  m_point_x=m_point_x,
                                  m_point_y=m_point_y)
     
+    def angleBetween(self, point_or_list, starting_point):
+        '''
+        Args:
+            point_or_list: a list or numpy array of single/multiple 
+                xy-coordinates or a (list of) Point(s).
+            starting_point: a list or numpy array of single xy-coordinates 
+                or a Point, from which the clock starts.
+                
+        Returns: the angles between the starting_point and the point_or_list
+            with the origin as vertex.
+        '''
+        angleOrigin = 180-self.angleOffset(starting_point)
+        anglePoints = 180-self.angleOffset(point_or_list)
+        anglePoints[anglePoints<angleOrigin] = anglePoints[anglePoints<angleOrigin]+360
+        return anglePoints-angleOrigin
+    
     @staticmethod
     def _centroid(m_point_x, m_point_y):
         '''
@@ -337,27 +354,44 @@ class Point(np.ndarray):
         return centroid_point
     
     @staticmethod
-    def _orderedIndex(some_angle_offsets):
+    def _orderedIndex(some_angles):
         '''
         Args:
-            some_angle_offsets: a result from the angleOffset method
+            some_angle_offsets: a number of angles to sort
         
         Returns: the index of the points in a clockwise order as a numpy.ndarray
         '''
-        ordered_index = (some_angle_offsets*-1).argsort(axis=0)
+        ordered_index = (some_angles).argsort(axis=0)
         return ordered_index
 
-    def orderedPoints(self):
+    def orderedPoints(self, centerpoint=None, start_from=None, return_angles=False):
         '''
+        Args:
+            centerpoint: either the centroid as the origin for the clock-pointer 
+                or a given center Point.
+            start_from: if given a Point, it will serve as the starting point 
+                for computing the clockwise order.
+                
         Returns:
-            The Points in a clockwise-ordered fashion
+            The Points in a clockwise-ordered fashion.
         '''
-        centr = self.centroid()
-        angle_offsets = centr.angleOffset(self)
-        ordered_index = self._orderedIndex(angle_offsets)
+        if centerpoint is None:
+            centr = self.centroid()
+        else:
+            centr = centerpoint
+            
+        if start_from is None:
+            angles = centr.angleOffset(self)*-1
+        else:
+            angles = centr.angleBetween(self, start_from)
+            
+        ordered_index = self._orderedIndex(angles)
         ordered_self = self[ordered_index][:,0]
-        
-        return ordered_self
+        if return_angles:
+            angles.sort()
+            return ordered_self, angles
+        else:
+            return ordered_self
 
     @staticmethod
     def _polyArea(m_point_ordered_x, m_point_ordered_y):
@@ -372,7 +406,12 @@ class Point(np.ndarray):
         '''
         return 0.5*np.abs(np.dot(m_point_ordered_x.T[0],np.roll(m_point_ordered_y.T[0],1))
                           -np.dot(m_point_ordered_y.T[0],np.roll(m_point_ordered_x.T[0],1)))
-
+    
+    
+      ##########################
+     #### Obsolete methods ####
+    ##########################
+    
     def polyArea(self):
         '''
         Returns: the area of the polygon bounded by the Point instance as a numpy.ndarray

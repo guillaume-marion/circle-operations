@@ -1,4 +1,9 @@
 from matplotlib import pyplot as plt
+import numpy as np
+
+
+
+
 
 ######################
 ### stability test ###
@@ -76,7 +81,7 @@ x_min = int(min(mc.x-max(mc.r)))-1
 x_max = int(max(mc.x+max(mc.r)))+1
 y_min = int(min(mc.y-max(mc.r)))-1
 y_max = int(max(mc.y+max(mc.r)))+1
-n_points = 2000
+n_points = 1000
 random_x = np.random.uniform(x_min, x_max, n_points).reshape(-1,1)
 random_y = np.random.uniform(y_min, y_max, n_points).reshape(-1,1)
 random_r = np.random.uniform(0.1, 0.5, n_points).reshape(-1,1)
@@ -112,23 +117,53 @@ for p in random_p:
 
 
 
+#######################
+### Circle clusters ###
+p1 = Point([5,6])
+p2 = Point([6,7])
+p = Point([p1,p2])
+multic1 = Circle.populate_lines(p, nr_circles=15, radius_min=1, radius_max=4)
+p3 = Point([15,7])
+p4 = Point([16,6])
+p = Point([p3,p4])
+multic2 = Circle.populate_lines(p, nr_circles=15, radius_min=1, radius_max=4)
+multic = Circle([multic1,multic2])
+mpc = Circle([[25,4,2],[25,7,2],[25,10,2]])
+multic = Circle(np.append(multic,mpc,axis=0))
+c = Circle([10,20,2])
+multic = Circle(np.append(c,multic,axis=0))
+c = Circle([10,20,1])
+multic = Circle(np.append(c,multic,axis=0))
+
+result = multic.cluster()
+
+fig,ax = plt.subplots()
+fig.set_size_inches(15,10)
+ax.set_xlim((0, 30))
+ax.set_ylim((0, 30))
+for i, resultc in enumerate(result):
+    colors = ['black','red','blue','orange']
+    for c in resultc:
+        cplot = plt.Circle((c.x, c.y), c.r, color=colors[i], fill=False)
+        ax.add_artist(cplot)
+### Circle clusters ###
+#######################
+
+
+
+        
+
 #####################
 ### angle between ###
 p = Point([[8,8],[8,12],[12,12],[12,8]])
 cp = Point([10,10])
 
-def angleBetween(centerpoint, s_point, m_point):
-    angleOrigin = 180-centerpoint.angleOffset(s_point)
-    anglePoints = 180-centerpoint.angleOffset(m_point)
-    anglePoints[anglePoints<angleOrigin] = anglePoints[anglePoints<angleOrigin ]+360
-    return anglePoints-angleOrigin
-
-i = 1
+i = 3
 plt.scatter(p.x,p.y)
 plt.scatter(cp.x,cp.y, c='red')
 plt.scatter(p[i].x,p[i].y, marker='P', c='black', alpha=.5, s=250)
-angleBetween(p[i], p.drop(i), cp)
-Point.orderedIndex()
+p.drop(i).orderedPoints(cp, return_angles=True)
+p.drop(i).orderedPoints(cp, p[i], return_angles=True)
 ### angle between ###
 #####################
 
@@ -140,10 +175,10 @@ Point.orderedIndex()
 ### outer bound ###
 p1 = Point([5,7])
 p2 = Point([15,7])
-p3 = Point([25,22])
+p3 = Point([10,22]) # 25,22
 p4 = Point([5,7])
 p = Point([p1,p2,p3,p4])
-multic = Circle.populate_lines(p, nr_circles=15, radius_min=1, radius_max=4)
+multic = Circle.populate_lines(p, nr_circles=15, radius_min=1, radius_max=3)
 
 fig,ax = plt.subplots()
 fig.set_size_inches(15,10)
@@ -159,29 +194,94 @@ all_intersects = Point(all_intersects_l).dropna()
 for p in all_intersects:
     if multic.encompass(p).any():
         a = 1
-        intplot = plt.scatter(p.x,p.y, c='orange', alpha=0.5)
+        intplot = plt.scatter(p.x,p.y, c='orange', alpha=0.3)
         ax.add_artist(intplot)
     else:
         intplot = plt.scatter(p.x,p.y, c='black')
         ax.add_artist(intplot)
 
-l = all_intersects_l
-mask = np.array([multic.encompass(intersec).any() for intersec in Point(l[0]).dropna()])
-selection_outer_intersections = Point(l[0]).dropna()[mask==False,:]
-plt.scatter(selection_outer_intersections.x,
-            selection_outer_intersections.y,
-            s=200, color='red', marker='P')
+ordered_boundaries_p, ordered_boundaries_cp, ordered_angles, non_selected, _ = multic.orderedBoundaries()
+ordered_boundaries = np.hstack((ordered_boundaries_cp, ordered_boundaries_p))
+ordered_boundaries = ordered_boundaries.reshape(-1,2)
+ordered_boundaries = Point([ordered_boundaries])
+plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='black')
 
-boundaries_l = multic.boundaries()
-boundaries_points = [p[0] for p in boundaries_l]
-boundaries_points = Point([item for sublist in boundaries_points for item in sublist])
-boundaries_points = Point(np.unique(boundaries_points,axis=0))
-boundaries_points  = boundaries_points.orderedPoints()
-plt.plot(boundaries_points.x, boundaries_points.y, c='black')
-
+non_selected = Point([item for sublist in non_selected for item in sublist])
+plt.scatter(non_selected.x, non_selected.y, c='red', marker='P', s=200)
 ### outer bound ###
 ###################
 
 
 
 
+# TO FIND THE INNER BOUNDARY SIMPLY RE-EXECUTE THE METHOD ON THE REMAINING BOUNDARIES
+### REWRITE METHOD TO TAKE AS ARGUMENT : BOUNDARIES, CP (such that it can be looped)
+### TEST METHOD FOR MULTIPLE HOLES
+ordered_boundaries_p, ordered_boundaries_cp, ordered_angles, non_selected, _ = multic.orderedBoundaries()
+boundaries_l, centerpoints_l = non_selected, _ 
+
+# Params
+first = True
+ordered_boundaries_l = []
+ordered_centerpoints_l = []
+ordered_angles_l = []
+remaining_boundaries_l = []
+remaining_centerpoints_l = []
+
+# Starting point = of the Circles with the leftmost intersections, we select
+#  that Circle which also has the upmost intersection. From that Circle we
+#  take the leftmost intersection as starting point.
+xmin = min([_.x.min().round(prec) for _ in boundaries_l])
+xmin_index = [i for i,_ in enumerate(boundaries_l) if _.x.min().round(prec) == xmin]
+ymax_xmin = [boundaries_l[_].y.max().round(prec) for _ in xmin_index]
+xmin_subindex = [i for i,_ in enumerate(ymax_xmin) if _ == max(ymax_xmin)][0]
+xmin_index = xmin_index[xmin_subindex]
+previous_i = xmin_index
+boundary = [_ for _ in boundaries_l[xmin_index] if _.x.round(prec) == xmin][0]
+cp = centerpoints_l[xmin_index]
+
+while True: 
+    # Favor new centerpoint
+    i = ([i for i,_ in enumerate(boundaries_l) 
+          if np.any(_.round(prec)==boundary.round(prec))])
+    i = [_ for _ in i if _ != previous_i][0] if len(i)>1 else i[0]
+    if first:
+        i = previous_i
+    bp = boundaries_l[i]
+    cp = centerpoints_l[i]
+    n_bounds = len(bp)
+    # Find the index of the boundary in the bp's
+    mask = (bp.round(prec)==boundary.round(prec)).all(axis=1)
+    j = int(np.arange(n_bounds)[mask])
+    # Order the bp's excluding the previous boundary
+    ordered_remainders, angles = bp.drop(j).orderedPoints(cp, bp[j], True)
+    angle = min(angles)
+    # The next boundary is found by taking the first bp of the ordered bp's
+    boundary = ordered_remainders[0]
+    # Break if boundary is closed
+    if not first and np.all(ordered_boundaries_l[0].round(prec)==boundary.round(prec)):
+        break
+    # Add it to the list as well as the corresponding cp
+    ordered_boundaries_l.append(boundary)
+    ordered_centerpoints_l.append(cp)
+    ordered_angles_l.append(angle)
+    # Reset previous i
+    previous_i = i
+    first = False
+# Collect boundaries which have note been used in the closed circuit, 
+#  i.e. boundaries of 'inner holes'
+try:
+    indices, candidates = zip(*[(i,p) for (i,sublist) in enumerate(boundaries_l) for p in sublist 
+                                if (p.round(prec) != np.array(ordered_boundaries_l).round(prec)).all()])
+    remaining_centerpoints = Point([centerpoints_l[_] for _ in indices]).round(prec) 
+    for u_cp in np.unique(remaining_centerpoints, axis=0):
+        mask = (remaining_centerpoints == u_cp).all(axis=1)
+        p = Point([candidates])[mask]
+        cp = Point([u_cp])
+        remaining_boundaries_l.append(p)
+        remaining_centerpoints_l.append(cp)
+except ValueError:
+    warnings.warn('no inner boundaries')
+
+ordered_boundaries = Point([ordered_boundaries_l])
+plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='black')
