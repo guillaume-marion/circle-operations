@@ -28,8 +28,8 @@ class Circle(Point):
         '''
         A Circle is created from a np.ndarray.
         The array can exist of a single set of coordinates+radius or multiple, e.g.:
-        - a = Circle([5,7,1])
-        - b = Circle([[5,7,1],[13,4,1]])  
+        - Circle([5,7,1])
+        - Circle([[5,7,1],[13,4,1]])  
         '''
         obj = np.asarray(inputarray).view(cls)
         try:
@@ -71,13 +71,13 @@ class Circle(Point):
     def _random(cls, x_min, x_max, y_min, y_max, radius_min, radius_max, nr_circles):
         '''
         Args:
-            x_min: minium value for x-coordinates.
-            x_max: maximum value for x-coordinates.
-            y_min: minimum value for y-coordinates.
-            y_max: maximum value for y-coordinates.
-            radius_min: minimum value for radii.
-            radius_max: maximum value for radii.
-            nr_circles: number of xy-coordinates & radii to be produced.
+            x_min: Minium value for x-coordinates.
+            x_max: Maximum value for x-coordinates.
+            y_min: Minimum value for y-coordinates.
+            y_max: Maximum value for y-coordinates.
+            radius_min: Minimum value for radii.
+            radius_max: Maximum value for radii.
+            nr_circles: The number of xy-coordinates & radii to be produced.
         
         Returns: 
             Random xy-coordinates & radii.
@@ -91,16 +91,16 @@ class Circle(Point):
     def random(cls, x_min, x_max, y_min, y_max, radius_min, radius_max, nr_circles):
         '''
         Args:
-            x_min: minium value for x-coordinates.
-            x_max: maximum value for x-coordinates.
-            y_min: minimum value for y-coordinates.
-            y_max: maximum value for y-coordinates.
-            radius_min: minimum value for radii.
-            radius_max: maximum value for radii.
-            nr_circles: number of xy-coordinates & radii to be produced.
+            x_min: Minium value for x-coordinates.
+            x_max: Maximum value for x-coordinates.
+            y_min: Minimum value for y-coordinates.
+            y_max: Maximum value for y-coordinates.
+            radius_min: Minimum value for radii.
+            radius_max: Maximum value for radii.
+            nr_circles: The number of xy-coordinates & radii to be produced.
         
         Returns: 
-            Random instance of a Circle.
+            A random instance of a Circle.
         '''
         xyr_values = cls._random(x_min, x_max, y_min, y_max, radius_min, radius_max, nr_circles)
         random_circle = cls(xyr_values)
@@ -110,12 +110,12 @@ class Circle(Point):
     def _populate_lines(cls, m_point, nr_circles, jitter_sd, radius_min, radius_max):
         '''
         Args:
-            m_point: multiple Points.
-            nr_circles: number of circles to be created for each line.
-            jitter_sd: the standard deviation of the normal distribution
+            m_point: Multiple Points.
+            nr_circles: The number of circles to be created for each line.
+            jitter_sd: The standard deviation of the normal distribution
                 from which the jitter is sampled.
-            radius_min: the minimum value for the radii.
-            radius_max: the maximum value for the radii.
+            radius_min: The minimum value for the radii.
+            radius_max: The maximum value for the radii.
         Returns:
             A number of randomized circles between each set of Points in their 
             given order. This allows one to populate circles along a path defined
@@ -128,21 +128,21 @@ class Circle(Point):
         return populated_lines
     
     @classmethod
-    def populate_lines(cls, m_point, nr_circles, jitter_sd=1, radius_min=2, radius_max=2):
+    def populate_lines(cls, point, nr_circles, jitter_sd=1, radius_min=2, radius_max=2):
         '''
         Args:
-            m_point: multiple Points.
-            nr_circles: number of circles to be created for each line.
-            jitter_sd: the standard deviation of the normal distribution
+            point: Multiple Points.
+            nr_circles: The number of circles to be created for each line.
+            jitter_sd: The standard deviation of the normal distribution
                 from which the jitter is sampled.
-            radius_min: the minimum value for the radii.
-            radius_max: the maximum value for the radii.
+            radius_min: The minimum value for the radii.
+            radius_max: The maximum value for the radii.
         Returns:
             A number of randomized Circles between each set of Points in their 
             given order. This allows one to populate Circles along a path defined
             by a set of given Points.
         '''
-        populated_lines = cls._populate_lines(m_point, nr_circles, jitter_sd, radius_min, radius_max)
+        populated_lines = cls._populate_lines(point, nr_circles, jitter_sd, radius_min, radius_max)
         populated_lines_as_Circles = Circle(populated_lines)
         return populated_lines_as_Circles
     
@@ -153,7 +153,7 @@ class Circle(Point):
     
     def area(self):
         '''
-        Returns: the area(s) as a numpy.ndarray
+        Returns: The area(s) as a numpy.ndarray.
         '''
         return math.pi*self.r**2
     
@@ -161,13 +161,13 @@ class Circle(Point):
     def _intersect(s_circle_r, s_circle_xy, m_circle_r, m_circle_xy, distance):
         '''
         Args:
-            s_circle_r: a single radius as a numpy.ndarray.
-            s_circle_xy: a single set of xy-coordinates as a numpy.ndarray.
-            m_circle_r: a single or multiple sets of radii as a numpy.ndarray.
-            m_circle_xy: a single or multiple sets of xy-coordinates as a
+            s_circle_r: A single radius as a numpy.ndarray.
+            s_circle_xy: A single set of xy-coordinates as a numpy.ndarray.
+            m_circle_r: A single or multiple sets of radii as a numpy.ndarray.
+            m_circle_xy: A single or multiple sets of xy-coordinates as a
                 numpy.ndarray.
         
-        Returns: the xy-coordinates of the intersection points between s_circle 
+        Returns: The xy-coordinates of the intersection points between s_circle 
             and m_circle as a numpy.ndarray.
         '''
         # Rewriting parameters for conciseness
@@ -199,22 +199,21 @@ class Circle(Point):
         intersect_2 = summand_1+summand_2*np.array([[1,-1]])
         return intersect_1, intersect_2
     
-    def intersect(self, circle_or_list):
+    def intersect(self, circle):
         '''
         Args:
-            circle_or_list: a list or numpy array of single/multiple 
-                xy-coordinates+radius or a (list of) Circle(s).
+            circle_or_list: One or multiple Circles.
         
-        Returns: the xy-coordinates of the intersection points between the
+        Returns: The xy-coordinates of the intersection points between the
             origin Circle and the (multiple) circle(s) as a tuple of 2 Points.
         '''
         # Extract the necessary parameters.
         s_circle_r = self.r
         s_circle_xy = self.xy
-        m_circle = self._reClass(circle_or_list)
+        m_circle = circle
         m_circle_r = m_circle.r
         m_circle_xy = m_circle.xy
-        distance = self.distance(circle_or_list)
+        distance = self.distance(circle)
         # Execute the static method with above parameters.
         intersects = self._intersect(s_circle_r=s_circle_r,
                                      s_circle_xy=s_circle_xy,
@@ -223,9 +222,9 @@ class Circle(Point):
                                      distance=distance)
         return intersects
 
-    def intersections(self):
+    def calc_intersections(self):
         '''   
-        Returns: the xy-coordinates of the intersection points between each of
+        Returns: The xy-coordinates of the intersection points between each of
             the origin Circles and the other origin Circles as a list of tulpes
             of 2 Points.
         '''
@@ -244,7 +243,7 @@ class Circle(Point):
     def encompass(self, s_point_or_circle, prec=8):
         '''
         Args:
-            s_point_or_circle: a single Point or Circle to test.
+            s_point_or_circle: A single Point or Circle to test.
         
         Returns:
             Boolean indicating if the single Point or Circle is encompassed.
@@ -268,12 +267,12 @@ class Circle(Point):
             is_in_circle = ((x-h)**2+(y-k)**2).round(prec)<(r**2).round(prec)
             return is_in_circle
     
-    def cluster(self):
+    def calc_clusters(self):
         '''
-        Return: a tuple of which each element is an intersecting group of Circles.
+        Return: A tuple of which each element is an intersecting group of Circles.
         '''
         # Get all the intersections (many-to-many) and define constants.
-        intersections = self.intersections()
+        intersections = self.calc_intersections()
         nr_circles = len(intersections)
         index = np.arange(nr_circles)
         # Define receptacles.
@@ -337,7 +336,7 @@ class Circle(Point):
         
     def _boundaries(self):
         '''
-        Returns: the xy-coordinates of the intersection points between each of
+        Returns: The xy-coordinates of the intersection points between each of
             the origin Circles and the other origin Circles as a Point as well as
             the corresponding centerpoint. The result is returned only if the 
             aformentioned intersections are not encompassed by a Circle, i.e. 
@@ -345,7 +344,7 @@ class Circle(Point):
         '''
         boundaries_l = []
         centerpoints_l = []
-        intersects_l = self.intersections()
+        intersects_l = self.calc_intersections()
         # Iterate through the intersections tulpes of each Circle
         for i, intersects_t in enumerate(intersects_l):
             # Each intersections tulpe exists of 2 Points (with each many entries)
@@ -369,7 +368,7 @@ class Circle(Point):
     def orderedBoundaries(self, prec=8):
         '''
         Args:
-            prec: number of decimals for which the comparisons are made on
+            prec: The number of decimals for which the comparisons are made on
             
         Return:
             The sorted boundaries, i.e. the intersections Points lying on the

@@ -225,7 +225,7 @@ class Point(np.ndarray):
         lower_end = self[:row]
         upper_end = self[row+1:]
         appended = np.append(lower_end, upper_end, axis=0)
-        appended_point = Point(appended)
+        appended_point = self.__class__(appended)
         
         return appended_point
     

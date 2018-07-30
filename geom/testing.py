@@ -1,6 +1,6 @@
+from geom.circl import Circle, Point
 from matplotlib import pyplot as plt
 import numpy as np
-
 
 
 
@@ -30,13 +30,8 @@ if (mp2 == Point([[9,10],[7,10]])).sum()<4:
 mp2 = Point([sp2,sp3])
 # Test method
 sp1.distance(sp2)
-sp1.distance([sp2])
-sp1.distance([5,4])
-sp1.distance([mp2])
-sp1.distance([[6,5],[9,2]])
-
+sp1.distance(mp2)
 mp3 = Point([sp1,sp2,sp3])
-mp3.polyArea()
 ### stability test ###
 ######################
 
@@ -62,7 +57,7 @@ for c in clist:
     cplot = plt.Circle((c.x,c.y), c.r, color='blue', fill=False)
     ax.add_artist(cplot)
 
-intersectpoints = c1.intersect(clist[1:])
+intersectpoints = c1.intersect(Circle(clist).drop(0))
 for p in intersectpoints: #np.array(intersectpoints).reshape(-1,2):
     intplot = plt.scatter(p.x,p.y)
     ax.add_artist(intplot)
@@ -135,7 +130,7 @@ multic = Circle(np.append(c,multic,axis=0))
 c = Circle([10,20,1])
 multic = Circle(np.append(c,multic,axis=0))
 
-result = multic.cluster()
+result = multic.calc_clusters()
 
 fig,ax = plt.subplots()
 fig.set_size_inches(15,10)
@@ -151,7 +146,8 @@ for i, resultc in enumerate(result):
 
 
 
-        
+
+
 
 #####################
 ### angle between ###
@@ -188,7 +184,7 @@ for c in multic:
     cplot = plt.Circle((c.x, c.y), c.r, color='blue', fill=False)
     ax.add_artist(cplot)
 
-all_intersects_l = multic.intersections()
+all_intersects_l = multic.calc_intersections()
 all_intersects = Point(all_intersects_l).dropna()
 
 for p in all_intersects:
