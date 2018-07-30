@@ -208,17 +208,18 @@ plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='black')
 
 non_selected = Point([item for sublist in non_selected for item in sublist])
 plt.scatter(non_selected.x, non_selected.y, c='red', marker='P', s=200)
-### outer bound ###
-###################
 
 
-
-
+  ###########
+ ### WIP ###
+##########
+ 
 # TO FIND THE INNER BOUNDARY SIMPLY RE-EXECUTE THE METHOD ON THE REMAINING BOUNDARIES
 ### REWRITE METHOD TO TAKE AS ARGUMENT : BOUNDARIES, CP (such that it can be looped)
 ### TEST METHOD FOR MULTIPLE HOLES
 ordered_boundaries_p, ordered_boundaries_cp, ordered_angles, non_selected, _ = multic.orderedBoundaries()
 boundaries_l, centerpoints_l = non_selected, _ 
+prec=8
 
 # Params
 first = True
@@ -285,3 +286,6 @@ except ValueError:
 
 ordered_boundaries = Point([ordered_boundaries_l])
 plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='black')
+### outer bound ###
+###################
+

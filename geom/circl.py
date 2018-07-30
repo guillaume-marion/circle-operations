@@ -1,21 +1,24 @@
 # Local imports
-#from geom.pnt import Point
+from geom.pnt import Point
+
 # Library imports
 import math
 import warnings
 import numpy as np
 
 
+
+
+
 class Circle(Point):
     '''
     The Circle class is a child class of the Point. It includes a
         number of methods which can be used to calculate metrics between sets 
-        of coordinates+radius such as intersections, etc.
+        of coordinates+radius such as intersections, ....
     Note the difference in notation between:
-        - 'circle' which at least represent a set of coordinates+radius.
-        - 'Circle' which represents the class.
+        - 'circle' which at least represent a set of coordinates+radius in a list, array, ...
+        - 'Circle' which represents an instance of the class.
     '''
-    
     
       ###############################
      #### Dunder and properties ####
@@ -23,18 +26,29 @@ class Circle(Point):
     
     def __new__(cls, inputarray):
         '''
-        A Circle can be created from a single set of coordinates or multiple:
-        - single: a = Circle([5,7,1]).
-        - multiple: b = Circle([[5,7,1],[13,4,1]]) . 
+        A Circle is created from a np.ndarray.
+        The array can exist of a single set of coordinates+radius or multiple, e.g.:
+        - single: a = Circle([5,7,1])
+        - multiple: b = Circle([[5,7,1],[13,4,1]])  
         '''
         obj = np.asarray(inputarray).view(cls)
         try:
             # Controlling for correct shape
             obj - np.asarray([1, 1, 1])
+            # Reshaping to columns
             obj = obj.reshape(-1, 3)
             return obj
         except:
             raise ValueError("The input should have the shape of a (3,) or (*,3) array") 
+    
+    def __init__(self, inputarray):
+        '''
+        We add default parameters to control for clustering, etc.
+        We use the return from __new__ as self.
+        '''
+        self.intersections = None
+        self._isclustered = False #should not be called/changed by the user
+        self.clusters = None
     
     @property
     def xy(self):
@@ -49,10 +63,9 @@ class Circle(Point):
     def r(self, value):
         self[:,2:] = value    
     
-    
-      ######################################
-     #### Random instantiation methods ####
-    ######################################
+      #######################################
+     #### Random initialization methods ####
+    #######################################
     
     @classmethod
     def _random(cls, x_min, x_max, y_min, y_max, radius_min, radius_max, nr_circles):
@@ -105,8 +118,8 @@ class Circle(Point):
             radius_max: the maximum value for the radii.
         Returns:
             A number of randomized circles between each set of Points in their 
-            given order. This allows one to populate circles on the outer bound
-            of irregular geometric shapes given by the corner Points.
+            given order. This allows one to populate circles along a path defined
+            by a set of given Points.
         '''
         populated_lines = super(Circle, cls)._populate_lines(m_point, nr_circles, jitter_sd)
         random_radii = np.random.uniform(radius_min, radius_max, len(populated_lines))
@@ -126,8 +139,8 @@ class Circle(Point):
             radius_max: the maximum value for the radii.
         Returns:
             A number of randomized Circles between each set of Points in their 
-            given order. This allows one to populate Circles on the outer bound
-            of irregular geometric shapes given by the corner Points.
+            given order. This allows one to populate Circles along a path defined
+            by a set of given Points.
         '''
         populated_lines = cls._populate_lines(m_point, nr_circles, jitter_sd, radius_min, radius_max)
         populated_lines_as_Circles = Circle(populated_lines)
