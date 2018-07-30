@@ -28,8 +28,8 @@ class Circle(Point):
         '''
         A Circle is created from a np.ndarray.
         The array can exist of a single set of coordinates+radius or multiple, e.g.:
-        - single: a = Circle([5,7,1])
-        - multiple: b = Circle([[5,7,1],[13,4,1]])  
+        - a = Circle([5,7,1])
+        - b = Circle([[5,7,1],[13,4,1]])  
         '''
         obj = np.asarray(inputarray).view(cls)
         try:
