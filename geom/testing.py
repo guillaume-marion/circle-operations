@@ -5,6 +5,7 @@ import numpy as np
 
 
 
+
 ######################
 ### stability test ###
 # Test initiation
@@ -130,7 +131,10 @@ multic = Circle(np.append(c,multic,axis=0))
 c = Circle([10,20,1])
 multic = Circle(np.append(c,multic,axis=0))
 
-result = multic.calc_clusters()
+multic.calc_intersections()
+multic.calc_clusters()
+multic._clusters_indices
+result = [multic.get_cluster(_) for _ in range(multic.nr_clusters)]
 
 fig,ax = plt.subplots()
 fig.set_size_inches(15,10)
@@ -144,6 +148,42 @@ for i, resultc in enumerate(result):
 ### Circle clusters ###
 #######################
 
+
+
+
+
+
+#########################################################
+### correct index of intersections of cluster-results ###
+p3 = Point([15,7])
+p4 = Point([16,6])
+p = Point([p3,p4])
+multic = Circle.populate_lines(p, nr_circles=15, radius_min=1, radius_max=4)
+multic.calc_intersections()
+multic.calc_clusters()
+some_cluster = multic.get_cluster(0)
+
+for j in range(len(some_cluster)):
+    for k in range(len(some_cluster)):
+        if j==k:
+            break
+        fig,ax = plt.subplots()
+        fig.set_size_inches(15,10)
+        ax.set_xlim((0, 30))
+        ax.set_ylim((0, 30))
+        indices = [j, k]
+        for i in indices:
+            cplot = plt.Circle((some_cluster[i].x,some_cluster[i].y), some_cluster[i].r, fill=False)
+            ax.add_artist(cplot)
+        intercepts = some_cluster.intersections[indices[0]]
+        intercepting_index = indices[1]-1 if indices[1]>indices[0] else indices[1]
+        i1, i2 = intercepts[0][intercepting_index], intercepts[1][intercepting_index]
+        plt.scatter(i1.x, i1.y)
+        plt.scatter(i2.x, i2.y)
+        filename = str(j)+str(k)
+        #fig.savefig(filename)
+### correct index of intersections of cluster-results ###
+#########################################################
 
 
 
@@ -284,4 +324,7 @@ ordered_boundaries = Point([ordered_boundaries_l])
 plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='black')
 ### outer bound ###
 ###################
+
+
+
 
