@@ -49,8 +49,9 @@ class Circle(Point):
         self.intersections = []
         self._clusters_indices = []
         self.nr_clusters = None
-        self._isclustered = False
-        self._iscluster = False
+        self.isclustered = False
+        self.iscluster = False
+        self.isbounded = False
         self.outer_boundaries = []
         self.inner_boundaries = []
     
@@ -155,7 +156,7 @@ class Circle(Point):
      #### Core methods ####
     ######################
     
-    def _area(self):
+    def area(self):
         '''
         Returns: The area(s) as a numpy.ndarray.
         '''
@@ -351,7 +352,7 @@ class Circle(Point):
         # Store results
         self._clusters_indices = cluster_groups
         self.nr_clusters = len(cluster_groups)
-        self._isclustered = True
+        self.isclustered = True
     
     def get_cluster(self, cluster_index):
         '''
@@ -387,7 +388,7 @@ class Circle(Point):
             return corrected_indices
         
         # Assert clusters have been computed
-        if self._isclustered == False:
+        if self.isclustered == False:
             raise(RuntimeError, "To extract a cluster, compute clusters first.")
         # Get the specific set of indices as a list and sort
         indices_list = list(self._clusters_indices[cluster_index])
@@ -406,8 +407,8 @@ class Circle(Point):
             lean_intersections.append((i1[int_indices],i2[int_indices]))
         # Redefine variables
         Clustered_circle.intersections = lean_intersections
-        Clustered_circle._iscluster = True
-        Clustered_circle._isclustered = True # Needed because new instance...
+        Clustered_circle.iscluster = True
+        Clustered_circle.isclustered = True # Needed because new instance...
         Clustered_circle.nr_clusters = 1
         return Clustered_circle
         
@@ -420,9 +421,6 @@ class Circle(Point):
             aformentioned intersections are not encompassed by a Circle, i.e. 
             the intersections lies on the boundary of the Circles.
         '''
-        # Assert if the Circles are clustered
-        if self._iscluster == False:
-            raise(RuntimeError, "Boundaries should be computed for a specific cluster.")
         boundaries_l = []
         circles_l = []
         intersects_l = self.intersections
@@ -471,21 +469,24 @@ class Circle(Point):
         
         # Starting point = of the Circles with the leftmost intersections, we select
         #  that Circle which also has the upmost intersection. From that Circle we
-        #  take the leftmost intersection as starting point.
+        #  take the leftmost intersection as starting point. If by any odd chance
+        #  two of its intersections are in fact the leftmost intersections, take
+        #  the one with the lowest y-value.
         xmin = min([_.x.min().round(prec) for _ in boundaries_l])
         xmin_index = [i for i,_ in enumerate(boundaries_l) if _.x.min().round(prec) == xmin]
         ymax_xmin = [boundaries_l[_].y.max().round(prec) for _ in xmin_index]
         xmin_subindex = [i for i,_ in enumerate(ymax_xmin) if _ == max(ymax_xmin)][0]
         xmin_index = xmin_index[xmin_subindex]
         previous_i = xmin_index
-        boundary = [_ for _ in boundaries_l[xmin_index] if _.x.round(prec) == xmin][0]
+        starter_candidates = [_ for _ in boundaries_l[xmin_index] if _.x.round(prec) == xmin]
+        boundary = [_ for _ in starter_candidates if _.y == min(Point(starter_candidates).y)][0]
         c = circles_l[xmin_index]
         cp = c.xy
         
         while True: 
             # Favor new centerpoint
             i = ([i for i,_ in enumerate(boundaries_l) 
-                  if np.any(_.round(prec)==boundary.round(prec))])
+                  if np.any(np.all(_.round(prec)==boundary.round(prec), axis=1))])
             i = [_ for _ in i if _ != previous_i][0] if len(i)>1 else i[0]
             if first:
                 i = previous_i
@@ -547,6 +548,14 @@ class Circle(Point):
             - The inner boundaries of the Circle-cluster in a grouped and clockwise
               order as well as the corresponding circles.
         '''
+        # Assert if the Circles are clustered
+        if self.iscluster == False:
+            raise(RuntimeError, "Boundaries should be computed for a specific cluster.")
+        # Indicate boundaries have been computed
+        self.isbounded = True
+        # Assert if the cluster exists of only 2 or less Circles
+        if len(self)<3:
+            return None
         # Compute all the available boundaries
         boundaries_to_order =  self._all_boundaries()
         # Group and order all the boundaries on being outer boundaries 
@@ -559,47 +568,123 @@ class Circle(Point):
             ordered_b, ordered_c, ordered_a, remaining_b, remaining_c = self._orderBoundaries(boundaries_to_order, inner=True)
             inner_boundaries_l.append((ordered_b,ordered_c))
             boundaries_to_order = remaining_b, remaining_c
+        self.isbounded = True
         self.inner_boundaries = inner_boundaries_l
-            
-    @staticmethod
-    def _circularSegment(r, cord):
-        a = cord
-        bR = r
-        sqrt_v = np.vectorize(math.sqrt)
-        sr = (1/2)*sqrt_v(4*bR**2-a**2)
-        h = bR-sr
-        acos_v = np.vectorize(math.acos)
-        bA = bR**2 * acos_v((bR-h)/bR) - (bR-h)*sqrt_v(2*bR*h-h**2)
-        return bA
-    
-    
-    
-      ##########################
-     #### Obsolete methods ####
-    ##########################
-
-    def intersectCord(cls,circle_2):
-        d = cls.distance(circle_2)
-        r0 = cls.r
-        r1 = circle_2.r
+   
+    def intersectCord(self, circle):
+        '''
+        Args:
+            circle: The other Circle with whom the cord is created.
+        
+        Returns:
+            The length of the intersecting cord.
+        '''
+        d = self.distance(circle)
+        r0 = self.r
+        r1 = circle.r
         a = (1/d)*math.sqrt((-d+r1-r0)*(-d-r1+r0)*(-d+r1+r0)*(d+r1+r0))
         return a
-    
-    def circularSegment(cls,cord):
-        a = cord #self.intersectCord(circle_2)
-        bR = cls.r
+        
+    @staticmethod
+    def _circularSegment(r, cord):
+        '''
+        Args:
+            r: The radius of the first Circle.
+            cord: The length of the cord for which we want the circular segment.
+        
+        Returns:
+            The circular segment delimited by the cord.
+        '''
+        a = cord
+        bR = r
         sr = (1/2)*math.sqrt(4*bR**2-a**2)
         h = bR-sr
         bA = bR**2 * math.acos((bR-h)/bR) - (bR-h)*math.sqrt(2*bR*h-h**2)
         return bA
+    
+    def intersectArea(self , circle, show_segments=False):
+        '''
+        Args:
+            circle: One circle of which we want the know the intersecting area 
+                off with self.
+            show_segments: Boolean indicating if the individual contributions 
+                to the total Area need to be returned.
         
-    def intersectArea(cls,circle_2,show_segments=False):
-        a = cls.intersectCord(circle_2)
-        A_self = cls.circularSegment(a)
-        A_circle_2 = circle_2.circularSegment(a)
+        Returns:
+            The intersecting area of two Circles.
+        '''
+        a = self.intersectCord(circle)
+        A_self = self._circularSegment(self.r, a)
+        A_circle_2 = circle.circularSegment(a)
         A_total = A_self+A_circle_2
         if show_segments:
             return [A_total,[A_self,A_circle_2]]
         else:
             return A_total
     
+    def flatArea(self):
+        '''
+        The exact method for computing the area of a cluster of Circles.
+        
+        Returns:
+            The Area of the cluster of Circles taking into account:
+                - overlapping areas which are added only once.
+                - inner holes of the cluster of Circles.
+        '''
+        if self.isbounded == False:
+            raise(RuntimeError, "Boundaries should be computed in order to compute flatArea.")
+        # Case for a cluster of 1 Circle.
+        if len(self)==1:
+            A = self.area()
+            return A
+        # Case for a cluster of 2 Circles.
+        if len(self)==2:
+            A = self[0].intersectArea(self[1])
+            return A
+        # Case for a cluster of 2 or more Circles.
+        if len(self)>2:
+            # 1. Polygon area
+            ordered_b, ordered_c, ordered_a = self.outer_boundaries
+            ordered_cp = [_.xy for _ in ordered_c]
+            ordered_all = np.hstack((ordered_cp, ordered_b)).reshape(-1,2)
+            ordered_all = np.append(ordered_all, ordered_all[0].reshape(-1,2), axis=0)
+            ordered_all = Point(ordered_all)
+            polygon_A = ordered_all.polygonArea()
+            # 2. Area shaved of the Circles when defining the polygon
+            shaved_A = sum((np.array(ordered_a)/360)*Circle(ordered_c).area())
+            # 3. Included inner hole area(s) that need to be removed
+            all_holes_l = []
+            inner_boundaries = self.inner_boundaries.copy()
+            for ordered_b, ordered_c in inner_boundaries:
+                ordered_all = ordered_b+ordered_b[0]
+                ordered_all = Point(ordered_all)
+                # 3.a. Inner polygon area
+                inner_polygon_A = ordered_all.polygonArea()
+                # 3.b. Included shaved area that needs to be removed from the inner polygon area
+                cords = [ordered_all[i].distance(ordered_all[i+1]) for i in range(len(ordered_all)-1)]
+                inner_shaved_A_l = [self._circularSegment(ordered_c[i].r, cords[i]) for i in range(len(cords))]
+                inner_shaved_A = sum(inner_shaved_A_l)
+                # Total area inner hole
+                inner_hole_A = inner_polygon_A - inner_shaved_A
+                all_holes_l.append(inner_hole_A)
+            all_holes_A = sum(all_holes_l)
+            # Total area
+            return polygon_A + shaved_A - all_holes_A 
+    
+    def mcArea(self, n_samples=None):
+        '''
+        Returns:
+            The approximated area using monte carlo simulations.
+        '''
+        xmin = min(self.x - self.r)
+        xmax = max(self.x + self.r)
+        ymin = min(self.y - self.r)
+        ymax = max(self.y + self.r)
+        random_area = (xmax-xmin)*(ymax-ymin)
+        if n_samples==None:
+            n_samples = int(random_area*200)
+        random_p =  Point.random(xmin, xmax, ymin, ymax, n_samples)        
+        result = np.array([any(self.encompass(_)) for _ in random_p]).astype(int)
+        mean = result.mean()
+        approx_area = random_area*mean
+        return approx_area

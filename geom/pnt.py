@@ -404,15 +404,12 @@ class Point(np.ndarray):
         return 0.5*np.abs(np.dot(m_point_ordered_x.T[0],np.roll(m_point_ordered_y.T[0],1))
                           -np.dot(m_point_ordered_y.T[0],np.roll(m_point_ordered_x.T[0],1)))
     
-    def polygonArea(self, point):
+    def polygonArea(self):
         '''
-        Args:
-            A clockwise ordered Point.
-        
         Returns:
             The area of the polygon bounded by the points as a numpy.ndarray.
         '''
-        m_point_ordered_x = point.x
-        m_point_ordered_y = point.y 
+        m_point_ordered_x = self.x
+        m_point_ordered_y = self.y 
         A = self._polyArea(m_point_ordered_x, m_point_ordered_y)
         return A

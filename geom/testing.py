@@ -8,6 +8,8 @@ import numpy as np
 
 ######################
 ### stability test ###
+from geom.circl import Circle, Point
+
 # Test initiation
 sp1 = Point([6,12])
 sp2 = Point([8,10])
@@ -42,6 +44,8 @@ mp3 = Point([sp1,sp2,sp3])
 
 #################
 ### Intersect ###
+from geom.circl import Circle, Point
+
 c1 = Circle([6,12,4])
 c2 = Circle([10,12,4])
 c3 = Circle([6,8,4])
@@ -71,6 +75,8 @@ for p in intersectpoints: #np.array(intersectpoints).reshape(-1,2):
 
 #####################
 ### Encompassment ###
+from geom.circl import Circle, Point
+    
 mc = Circle([c1,c2])
 
 x_min = int(min(mc.x-max(mc.r)))-1
@@ -115,6 +121,8 @@ for p in random_p:
 
 #######################
 ### Circle clusters ###
+from geom.circl import Circle, Point
+
 p1 = Point([5,6])
 p2 = Point([6,7])
 p = Point([p1,p2])
@@ -155,6 +163,8 @@ for i, resultc in enumerate(result):
 
 #########################################################
 ### correct index of intersections of cluster-results ###
+from geom.circl import Circle, Point
+
 p3 = Point([15,7])
 p4 = Point([16,6])
 p = Point([p3,p4])
@@ -191,6 +201,8 @@ for j in range(len(some_cluster)):
 
 #####################
 ### angle between ###
+from geom.circl import Circle, Point
+
 p = Point([[8,8],[8,12],[12,12],[12,8]])
 cp = Point([10,10])
 
@@ -209,6 +221,7 @@ p.drop(i).orderedPoints(cp, p[i], return_angles=True)
 
 #######################################
 ### outer bound - multiple clusters ###
+from geom.circl import Circle, Point
 
 # No inner boundary hole
 p1 = Point([5,25])
@@ -225,9 +238,7 @@ p5 = Point([25,5])
 p = Point([p1,p2,p3,p4,p5]) 
 multic2 = Circle.populate_lines(p, nr_circles=30, radius_min=1, radius_max=2)
 
-# 3 inner boundary holes # Here resides an error
-#  I think it is because we take least angle
-#  Maybe in case of inner boundaries, we should take max angle
+# 3 inner boundary holes 
 p1 = Point([10,7])
 p2 = Point([20,7])
 p3 = Point([10,22])
@@ -268,8 +279,77 @@ for i in range(multic.nr_clusters):
 ### outer bound - multiple clusters ###
 #######################################
                
+        
+        
+        
+#############################
+### Area with monte carlo ###    
+from geom.circl import Circle, Point
+
+mc = Circle([[5,5,2],[10,10,2]])
+fig,ax = plt.subplots()
+fig.set_size_inches(15,10)
+ax.set_xlim((0, 35))
+ax.set_ylim((0, 35))
+for c in mc:
+    cplot = plt.Circle((c.x, c.y), c.r, color='blue', fill=False, alpha=.5)
+    ax.add_artist(cplot)
+
+mc[0].area()+mc[1].area()
+mc.mcArea()
+### Area with monte carlo ###    
+#############################
 
 
 
 
+
+############################
+### Testing cluster area ### 
+from geom.circl import Circle, Point
+
+# Square without inner hole
+mc = Circle([[4,6,2],
+             [6,8,2],
+             [8,6,2],
+             [6,4,2],
+             [6,6,2]])
     
+fig,ax = plt.subplots()
+fig.set_size_inches(15,10)
+ax.set_xlim((0, 35))
+ax.set_ylim((0, 35))
+for c in mc:
+    cplot = plt.Circle((c.x, c.y), c.r, color='blue', fill=False, alpha=.5)
+    ax.add_artist(cplot)
+
+
+mc.calc_intersections()
+mc.calc_clusters()
+cluster = mc.get_cluster(0)
+cluster.calc_boundaries()
+
+ordered_boundaries_p, ordered_boundaries_c, ordered_angles = cluster.outer_boundaries
+ordered_boundaries_cp = [_.xy for _ in ordered_boundaries_c]
+#ordered_boundaries_pp = Point(ordered_boundaries_p)
+#plt.scatter(ordered_boundaries_pp.x, ordered_boundaries_pp.y, color='black')
+ordered_boundaries = np.hstack((ordered_boundaries_cp, ordered_boundaries_p)).reshape(-1,2)
+ordered_boundaries = np.append(ordered_boundaries, ordered_boundaries[0].reshape(-1,2), axis=0)
+ordered_boundaries = Point(ordered_boundaries)
+plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='black')
+
+# Deduction
+a = ((ordered_boundaries_p[0].distance(ordered_boundaries_p[1])**2)+
+     (mc[:-1].area()/2).sum())
+# Simulation
+b = cluster.mcArea(300000)
+# Exact
+c = cluster.flatArea()
+
+print(a,b,c)
+### Testing cluster area with simple shapes ### 
+###############################################
+
+
+
+
