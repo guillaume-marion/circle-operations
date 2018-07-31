@@ -254,13 +254,14 @@ for i in range(multic.nr_clusters):
     cluster = multic.get_cluster(i)
     cluster.calc_boundaries()
     
-    ordered_boundaries_p, ordered_boundaries_cp,_ = cluster.outer_boundaries
+    ordered_boundaries_p, ordered_boundaries_c,_ = cluster.outer_boundaries
+    ordered_boundaries_cp = [_.xy for _ in ordered_boundaries_c]
     ordered_boundaries_pp = Point(ordered_boundaries_p)
     plt.scatter(ordered_boundaries_pp.x, ordered_boundaries_pp.y, color='black')
     ordered_boundaries = np.hstack((ordered_boundaries_cp, ordered_boundaries_p))
     ordered_boundaries = Point(ordered_boundaries)
     plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='black')
-    for inner_boundaries in cluster.inner_boundaries:
+    for inner_boundaries,_ in cluster.inner_boundaries:
         ordered_boundaries = Point(inner_boundaries)
         plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='green')
         plt.scatter(ordered_boundaries.x, ordered_boundaries.y, c='green')
