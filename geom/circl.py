@@ -155,7 +155,7 @@ class Circle(Point):
      #### Core methods ####
     ######################
     
-    def area(self):
+    def _area(self):
         '''
         Returns: The area(s) as a numpy.ndarray.
         '''
@@ -412,7 +412,7 @@ class Circle(Point):
         return Clustered_circle
         
     
-    def _boundaries(self):
+    def _all_boundaries(self):
         '''
         Returns: The xy-coordinates of the intersection points between each of
             the origin Circles and the other origin Circles as a Point as well as
@@ -422,7 +422,7 @@ class Circle(Point):
         '''
         # Assert if the Circles are clustered
         if self._iscluster == False:
-            raise(RuntimeError, "Boundaries should be computed for a specific cluster")
+            raise(RuntimeError, "Boundaries should be computed for a specific cluster.")
         boundaries_l = []
         centerpoints_l = []
         intersects_l = self.intersections
@@ -446,16 +446,20 @@ class Circle(Point):
                 centerpoints_l.append(centerpoints_st)
         return boundaries_l, centerpoints_l
     
-    def orderedBoundaries(self, prec=8):
+    def _orderBoundaries(self, boundaries, inner=False, prec=8):
         '''
         Args:
+            boundaries: All intersections which lie on the innner or outer 
+                boundary of the Circle-cluster.
+            inner: Boolean indicating if we are ordering inner boundaries.
             prec: The number of decimals for which the comparisons are made on.
             
         Return:
             The sorted boundaries, i.e. the intersections Points lying on the
-            boundary of the Circles as well as the corresponding center Points.
+            boundary of the Circles as well as the corresponding center Points
+            and angles.
         '''
-        boundaries_l, centerpoints_l = self._boundaries()
+        boundaries_l, centerpoints_l = boundaries
 
         # Params
         first = True
@@ -492,10 +496,15 @@ class Circle(Point):
             j = int(np.arange(n_bounds)[mask])
             # Order the bp's excluding the previous boundary
             ordered_remainders, angles = bp.drop(j).orderedPoints(cp, bp[j], True)
-            angle = min(angles)
-            # The next boundary is found by taking the first bp of the ordered bp's
-            boundary = ordered_remainders[0]
-            # Break if boundary is closed
+            if inner:
+                angle = max(angles)
+                # The next boundary is found by taking the last bp of the ordered bp's
+                boundary = ordered_remainders[-1]
+            else:
+                angle = min(angles)
+                # The next boundary is found by taking the first bp of the ordered bp's
+                boundary = ordered_remainders[0]
+            # Break if boundary loop is closed
             if not first and np.all(ordered_boundaries_l[0].round(prec)==boundary.round(prec)):
                 break
             # Add it to the list as well as the corresponding cp
@@ -518,10 +527,48 @@ class Circle(Point):
                 remaining_boundaries_l.append(p)
                 remaining_centerpoints_l.append(cp)
         except ValueError:
-            warnings.warn('no inner boundaries')
+            warnings.warn('No boundaries left to categorize.')
 
-        return ordered_boundaries_l, ordered_centerpoints_l, ordered_angles_l, remaining_boundaries_l, remaining_centerpoints_l 
+        return (ordered_boundaries_l,
+                ordered_centerpoints_l,
+                ordered_angles_l,
+                remaining_boundaries_l,
+                remaining_centerpoints_l)
         
+    def calc_boundaries(self):
+        '''
+        Returns:
+            - The outer boundaries of the Circle-cluster in a clockwise order as well
+              as the corresponding centerpoints and angles.
+            - The inner boundaries of the Circle-cluster in a grouped and clockwise
+              order.
+        '''
+        # Compute all the available boundaries
+        boundaries_to_order =  self._all_boundaries()
+        # Group and order all the boundaries on being outer boundaries 
+        ordered_b, ordered_cp, ordered_a, remaining_b, remaining_cp = self._orderBoundaries(boundaries_to_order)
+        self.outer_boundaries = ordered_b, ordered_cp, ordered_a
+        boundaries_to_order = remaining_b, remaining_cp
+        # Group and order all the remaining (inner) boundaries
+        inner_boundaries_l = []
+        while len(boundaries_to_order[0])>0:
+            ordered_b, ordered_cp, ordered_a, remaining_b, remaining_cp = self._orderBoundaries(boundaries_to_order, inner=True)
+            inner_boundaries_l.append(ordered_b)
+            self.inner_boundaries = inner_boundaries_l
+            boundaries_to_order = remaining_b, remaining_cp
+            
+    @staticmethod
+    def _circularSegment(r, cord):
+        a = cord
+        bR = r
+        sqrt_v = np.vectorize(math.sqrt)
+        sr = (1/2)*sqrt_v(4*bR**2-a**2)
+        h = bR-sr
+        acos_v = np.vectorize(math.acos)
+        bA = bR**2 * acos_v((bR-h)/bR) - (bR-h)*sqrt_v(2*bR*h-h**2)
+        return bA
+    
+    
     
       ##########################
      #### Obsolete methods ####
