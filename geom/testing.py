@@ -261,6 +261,9 @@ for c in multic:
 
 multic.calc_intersections()
 multic.calc_clusters()
+
+multic.get_cluster(0)
+
 for i in range(multic.nr_clusters):
     cluster = multic.get_cluster(i)
     cluster.calc_boundaries()

@@ -66,7 +66,13 @@ class Circle(Point):
         return np.asarray(self[:,2:])
     @r.setter
     def r(self, value):
-        self[:,2:] = value    
+        self[:,2:] = value   
+    @property
+    def xyr(self):
+        return self[:,:]
+    @xyr.setter
+    def xyr(self, value):
+        self[:,:] = value
     
       #######################################
      #### Random initialization methods ####
