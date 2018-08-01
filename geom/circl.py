@@ -498,6 +498,7 @@ class Circle(Point):
         remaining_boundaries_l = []
         remaining_circles_l = []
         
+        '''
         # As a starting points for finding the ordered boundaries we first find 
         #  the index  of the Circles which have boundaries (i.e. intersections on 
         #  the boundary) with the lowest overall x-value (can be more than 1).
@@ -508,14 +509,20 @@ class Circle(Point):
         ymax_xmin = [boundaries_l[_].y.max().round(prec) for _ in xmin_index]
         xmin_subindex = [i for i,_ in enumerate(ymax_xmin) if _ == max(ymax_xmin)]
         xmin_index = [xmin_index[_] for _ in xmin_subindex]
-        # From those Circles we look which one has a boundary with the lowest y-values
-        ymin_xmin = [boundaries_l[_].y.min().round(prec) for _ in xmin_index]
-        xmin_subindex = int(np.array([i for i,_ in enumerate(ymin_xmin) if _ == min(ymin_xmin)]))
+        # From those Circles we look which one has the overall lowest y-value
+        xmin_xmin = [(circles_l[_].x-circles_l[_].r).round(prec) for _ in xmin_index]
+        xmin_subindex = int(np.array([i for i,_ in enumerate(xmin_xmin ) if _ == min(xmin_xmin)]))
         xmin_index = xmin_index[xmin_subindex]
         previous_i = xmin_index
         # The boundary from which our discovery process of ordered boundaries 
         # starts, is the one with the lowest x.
         boundary = [_ for _ in boundaries_l[xmin_index] if _.x.round(prec) == xmin][0]
+        '''
+        xmin = min([(_.x-_.r).round(prec) for _ in circles_l])
+        xmin_index = [i for i,_ in enumerate(circles_l) if (_.x-_.r).round(prec) == xmin][0]
+        previous_i = xmin_index
+        xmin_intersects = min(boundaries_l[xmin_index].y.round(prec))
+        boundary = [_ for _ in boundaries_l[xmin_index] if _.y.round(prec) == xmin_intersects][0]
         # We define the according Circle (needed as return) and its centerpoint
         #  (needed for the method's calculations).
         c = circles_l[xmin_index]

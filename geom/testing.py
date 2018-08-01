@@ -281,11 +281,64 @@ for i in range(multic.nr_clusters):
         plt.scatter(ordered_boundaries.x, ordered_boundaries.y, c='green')
 ### outer bound - multiple clusters ###
 #######################################
-     
 
-      
+
+
+
+
+#####################################
+### outer bound - random clusters ###
+from geom.circl import Circle, Point
+
+multic = Circle.random(5,30,5,30,1,3,10)
+
+fig,ax = plt.subplots()
+fig.set_size_inches(15,10)
+ax.set_xlim((0, 35))
+ax.set_ylim((0, 35))
+for c in multic:
+    cplot = plt.Circle((c.x, c.y), c.r, color='black', fill=False, alpha=.5)
+    ax.add_artist(cplot)
+
+multic.calc_intersections()
+multic.calc_clusters()
+
+for i in range(multic.nr_clusters):
+    cluster = multic.get_cluster(i)
+    cluster.calc_boundaries()
+    
+    if len(cluster)==1:
+        c = cluster[0]
+        cplot = plt.Circle((c.x, c.y), c.r, color='blue', fill=True, alpha=.25)
+        ax.add_artist(cplot)
         
-   
+    if len(cluster)==2:
+        for c in cluster:
+            cplot = plt.Circle((c.x, c.y), c.r, color='orange', fill=True, alpha=.25)
+            ax.add_artist(cplot)
+        
+    if len(cluster)>2:
+        for c in cluster:
+            cplot = plt.Circle((c.x, c.y), c.r, color='green', fill=True, alpha=.25)
+            ax.add_artist(cplot)
+        ordered_boundaries_p, ordered_boundaries_c,_ = cluster.outer_boundaries
+        ordered_boundaries_cp = [_.xy for _ in ordered_boundaries_c]
+        ordered_boundaries_pp = Point(ordered_boundaries_p)
+        plt.scatter(ordered_boundaries_pp.x, ordered_boundaries_pp.y, color='black')
+        ordered_boundaries = np.hstack((ordered_boundaries_cp, ordered_boundaries_p))
+        ordered_boundaries = Point(ordered_boundaries)
+        plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='black')
+    for inner_boundaries,_ in cluster.inner_boundaries:
+        ordered_boundaries = Point(inner_boundaries)
+        plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='green')
+        plt.scatter(ordered_boundaries.x, ordered_boundaries.y, c='green')
+### outer bound - random clusters ###
+##################################### 
+
+
+  
+    
+    
 #############################
 ### Area with monte carlo ###    
 from geom.circl import Circle, Point
@@ -351,8 +404,8 @@ b = cluster.mcArea(300000)
 c = cluster.flatArea()
 
 print(a,b,c)
-### Testing cluster area with simple shapes ### 
-###############################################
+### Testing cluster area ### 
+############################
 
 
 
