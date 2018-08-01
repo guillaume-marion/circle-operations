@@ -281,10 +281,11 @@ for i in range(multic.nr_clusters):
         plt.scatter(ordered_boundaries.x, ordered_boundaries.y, c='green')
 ### outer bound - multiple clusters ###
 #######################################
-               
+     
+
+      
         
-        
-        
+   
 #############################
 ### Area with monte carlo ###    
 from geom.circl import Circle, Point

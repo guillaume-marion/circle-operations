@@ -15,9 +15,11 @@ class Circle(Point):
     The Circle class is a child class of the Point. It includes a
         number of methods which can be used to calculate metrics between sets 
         of coordinates+radius such as intersections, ....
-    Note the difference in notation between:
+    Note the difference in notation between (not applicable in arguments of methods):
         - 'circle' which at least represent a set of coordinates+radius in a list, array, ...
         - 'Circle' which represents an instance of the class.
+    Also note that when we refer to Circles we mean a single instance of the object
+        existing of multiple rows.
     '''
     
       ###############################
@@ -27,7 +29,7 @@ class Circle(Point):
     def __new__(cls, inputarray):
         '''
         A Circle is created from a np.ndarray.
-        The array can exist of a single set of coordinates+radius or multiple, e.g.:
+        The array can exist of a single or multiple circles, e.g.:
         - Circle([5,7,1])
         - Circle([[5,7,1],[13,4,1]])  
         '''
@@ -67,12 +69,6 @@ class Circle(Point):
     @r.setter
     def r(self, value):
         self[:,2:] = value   
-    @property
-    def xyr(self):
-        return self[:,:]
-    @xyr.setter
-    def xyr(self, value):
-        self[:,:] = value
     
       #######################################
      #### Random initialization methods ####
@@ -88,10 +84,10 @@ class Circle(Point):
             y_max: Maximum value for y-coordinates.
             radius_min: Minimum value for radii.
             radius_max: Maximum value for radii.
-            nr_circles: The number of xy-coordinates & radii to be produced.
+            nr_circles: The number of circles to be produced.
         
         Returns: 
-            Random xy-coordinates & radii.
+            A np.ndarray of random circles.
         '''
         xy = super(Circle, cls)._random(x_min, x_max, y_min, y_max, nr_circles)
         r = np.random.uniform(radius_min, radius_max, nr_circles)
@@ -108,10 +104,10 @@ class Circle(Point):
             y_max: Maximum value for y-coordinates.
             radius_min: Minimum value for radii.
             radius_max: Maximum value for radii.
-            nr_circles: The number of xy-coordinates & radii to be produced.
+            nr_circles: The number of Circles to be produced.
         
         Returns: 
-            A random instance of a Circle.
+            A random instance of (a) Circle(s).
         '''
         xyr_values = cls._random(x_min, x_max, y_min, y_max, radius_min, radius_max, nr_circles)
         random_circle = cls(xyr_values)
@@ -121,18 +117,21 @@ class Circle(Point):
     def _populate_lines(cls, m_point, nr_circles, jitter_sd, radius_min, radius_max):
         '''
         Args:
-            m_point: Multiple Points.
+            m_point: At least two Points.
             nr_circles: The number of circles to be created for each line.
             jitter_sd: The standard deviation of the normal distribution
                 from which the jitter is sampled.
             radius_min: The minimum value for the radii.
             radius_max: The maximum value for the radii.
+            
         Returns:
             A number of randomized circles between each set of Points in their 
             given order. This allows one to populate circles along a path defined
             by a set of given Points.
         '''
+        # Populate points
         populated_lines = super(Circle, cls)._populate_lines(m_point, nr_circles, jitter_sd)
+        # Add random radii
         random_radii = np.random.uniform(radius_min, radius_max, len(populated_lines))
         random_radii = random_radii.reshape(-1,1)
         populated_lines = np.append(populated_lines, random_radii, axis=1)
@@ -142,8 +141,8 @@ class Circle(Point):
     def populate_lines(cls, point, nr_circles, jitter_sd=1, radius_min=2, radius_max=2):
         '''
         Args:
-            point: Multiple Points.
-            nr_circles: The number of circles to be created for each line.
+            m_point: At least two Points.
+            nr_circles: The number of Circles to be created for each line.
             jitter_sd: The standard deviation of the normal distribution
                 from which the jitter is sampled.
             radius_min: The minimum value for the radii.
@@ -153,8 +152,11 @@ class Circle(Point):
             given order. This allows one to populate Circles along a path defined
             by a set of given Points.
         '''
+        # Produce circles with the given args.
         populated_lines = cls._populate_lines(point, nr_circles, jitter_sd, radius_min, radius_max)
+        # Initialize the circles as Circles.
         populated_lines_as_Circles = Circle(populated_lines)
+        
         return populated_lines_as_Circles
     
     
@@ -164,7 +166,7 @@ class Circle(Point):
     
     def area(self):
         '''
-        Returns: The area(s) as a numpy.ndarray.
+        Returns: The area(s) of the Circle(s) as a numpy.ndarray.
         '''
         return math.pi*self.r**2
     
@@ -174,12 +176,12 @@ class Circle(Point):
         Args:
             s_circle_r: A single radius as a numpy.ndarray.
             s_circle_xy: A single set of xy-coordinates as a numpy.ndarray.
-            m_circle_r: A single or multiple sets of radii as a numpy.ndarray.
-            m_circle_xy: A single or multiple sets of xy-coordinates as a
-                numpy.ndarray.
+            m_circle_r: A single or multiple radii as a numpy.ndarray.
+            m_circle_xy: A single or multiple xy-coordinates as a numpy.ndarray.
+            distance: The distance(s) between the s_circle and the m_circle(s).
         
-        Returns: The xy-coordinates of the intersection points between s_circle 
-            and m_circle as a numpy.ndarray.
+        Returns: The intersection points between s_circle  and m_circle(s) as a 
+            numpy.ndarray.
         '''
         # Rewriting parameters for conciseness
         d = distance
@@ -187,7 +189,7 @@ class Circle(Point):
         r1 = m_circle_r
         xy0 = s_circle_xy
         xy1 = m_circle_xy
-        # Raise for overlapping circles.
+        # Raise if circles overlap.
         inf_intersects = ((d==0) & (r0==r1))
         if inf_intersects.sum()>0:
             raise OverflowError('tangent circles')
@@ -195,17 +197,22 @@ class Circle(Point):
         mask = ((d>r0+r1) | (d<abs(r0-r1)))
         if mask.sum()>0:
             warnings.warn('no intersection')
-            # If only non-intersecting circles are provided, return None.
-            #if mask.sum()==len(r1):
-            #    return None
         # Compute intersections in a vectorized fashion.
+        ### Comppute the distance between self and the line passing the intersection 
+        ###  points.
         a = (r0**2-r1**2+d**2) / (2*d)
+        ### Set distance to nan if the is no intersections (this allows proper
+        ###  execution of the code, and resulting in a tuple of np.nan values)
         a[mask]=np.nan
-        sqrt_v = np.vectorize(math.sqrt)
-        h = sqrt_v(r0**2-a**2)
+        ### Compute the distance between the centerpoint of the intersection line 
+        ###  and one intersection point.
+        h = np.sqrt(r0**2-a**2)
+        ### First half of the sum.
         summand_1 = xy0+a*(xy1-xy0)/d
         diff = xy1-xy0
+        ### Second half of the sum.
         summand_2 = (h*(diff)/d)[:,::-1]
+        ### Numpy manipulation for correct summation.
         intersect_1 = summand_1+summand_2*np.array([[-1,1]])
         intersect_2 = summand_1+summand_2*np.array([[1,-1]])
         return intersect_1, intersect_2
@@ -213,10 +220,11 @@ class Circle(Point):
     def intersect(self, circle):
         '''
         Args:
-            circle_or_list: One or multiple Circles.
+            circle: One or multiple Circles.
         
-        Returns: The xy-coordinates of the intersection points between the
-            origin Circle and the (multiple) circle(s) as a tuple of 2 Points.
+        Returns: The intersection points between self and the (multiple) 
+            Circle(s) as a tuple of 2 Points (with each Point possibly holding 
+            multiple points).
         '''
         # Extract the necessary parameters.
         s_circle_r = self.r
@@ -235,21 +243,23 @@ class Circle(Point):
 
     def calc_intersections(self):
         '''   
-        Returns: The xy-coordinates of the intersection points between each of
-            the origin Circles and the other origin Circles as a list of tulpes
-            of 2 Points.
+        Stores: 
+            .intersections: The xy-coordinates of the intersection points between 
+                each of self and the other origin Circles as a list of tulpes 
+                of 2 Points (with each Point possibly holding multiple points).
         '''
-        ###intersects = np.array([]).reshape(-1,2)
+        # Create a receptacle list.
         intersects_l = list()
 
         for i in range(len(self)):
+            # Compute all the intersections between self and all other Circles.
             intersects_st = self[i].intersect(self.drop(i))
-            # Flatten the 2 Points by re-creating a Point.
-            #intersects_st = super(Circle, self).__new__(Point, intersects_st)
-            # Append to full list of intersects
-            ###intersects = np.append(intersects, intersects_st, axis=0)
+            # Append the intersects to the receptacle list.
             intersects_l.append(intersects_st)
-            # Store results
+            # Store results.
+            #  We now have a list where the item with index i is a tuple of two
+            #  Points. The first Point holds all first intersections with all the
+            #  other Circles; The other holds all second intersections.
             self.intersections = intersects_l
     
     def encompass(self, s_point_or_circle, prec=8):
@@ -260,14 +270,16 @@ class Circle(Point):
         Returns:
             Boolean indicating if the single Point or Circle is encompassed.
         '''
+        # Test if type is a Circle.
         if isinstance(s_point_or_circle, Circle):
             s_circle = s_point_or_circle
             distances = self.distance(s_circle)
             lengths = distances + s_circle.r
-            # Note the smaller than sign; Boundery values return False
+            # Note the smaller than sign; Boundary values will thus return False.
             is_in_circle = (lengths < self.r).any() 
             return is_in_circle
         
+        # Test if type is a Point.
         elif isinstance(s_point_or_circle, Point):
             s_point = s_point_or_circle
             r = self.r
@@ -275,73 +287,86 @@ class Circle(Point):
             k = self.y
             x = s_point.x
             y = s_point.y
-            # Note the smaller than sign; Boundery values return False
+            # Note the smaller than sign; Boundary values will thus return False.
             is_in_circle = ((x-h)**2+(y-k)**2).round(prec)<(r**2).round(prec)
             return is_in_circle
     
     def calc_clusters(self):
         '''
-        Return: 
-            A tuple of which each element is a set of indices of an 
-            intersecting group of Circles.
+        Stores: 
+            .clusters_indices: A tuple of which each element is a set of indices 
+                of an intersecting group of Circles.
+            .nr_clusters: The number of identified clusters.
+            .isclustered: Boolean indicating that the method has been executed.
         '''
-        # If not calculated yet, get all the intersections (many-to-many).
-        if len(self.intersections) == 0:
+        # Retrieve the intersections stored in self (for readability).
+        intersections = self.intersections
+        # Test that the intersections have been computed.
+        if len(intersections) == 0:
             raise(RuntimeError, "To compute clusters, compute intersections first.")
         # Define constants
-        nr_circles = len(self.intersections)
+        nr_circles = len(self)
         index = np.arange(nr_circles)
-        # Define receptacles.
+        # Create receptacles.
         intersections_indices = []
         nr_intersections = []
-        # Retrieve for each Circle the indices of the other Circles which intersect.
-        #  Also add the index of the Circle under consideration.
+        # For each Circle...
         for i,_ in enumerate(self.intersections):
+            # ...create a mask of all the Circles which do not intersect with it.
             mask = np.isnan(_[0]).all(axis=1)==False
+            # ...then get the indices of the Circle that DO intersect by using that mask.
             indices = set(np.delete(index, i)[mask])
+            # ...also keep track of how many intersecting Circles that amounts to.
             nr_intersections.append(len(indices))
+            # ...finally add the index of the Circle under scrutiny to the list
+            #     of indices from above.
             indices.add(i)
+            # ...and keep it in a list as a set.
             intersections_indices.append(indices)
-        # Provide a starting point for finding the Circle-clusters:
-        #  Here we just take all the indices of the Circles intersecting with 
-        #  the first Circle (i.e. index=0).
+        # Provide a starting point for finding the Circle-clusters by simply
+        #  taking the first set of indices of intersecting Circles.
+        # Note that a 'cluster' is defined simply as a set of Circle-indices.
         first_cluster_contribution = intersections_indices[0]
         cluster_list =  [first_cluster_contribution]
-        # We identify the clusters by adding the indices-groups to a cluster if 
-        #  at least one index within the group matches the cluster. In other words,
-        #  if A intersects with B, C and K, then it forms a basis for a cluster 
-        #  A-B-C-K (i.e. the aformentioned kickstart). Now if X intersects with 
-        #  Y, Z and K then we add it to the cluster , which becomes A-B-C-X-Y-Z-K.
-        for i, cluster in enumerate(cluster_list): 
+        # For each cluster (i.e. set of indices of Circles) in our list of clusters:
+        for i, cluster in enumerate(cluster_list):
+            # We make a first proposal for the final cluster definition, from which
+            #  we will later built onto (i.e. possibly add more indices that belong
+            #  to that cluster).
             final_cluster = cluster
-            # List of indices of Circles that intersect with one another.
-            #  E.g. remaining_indices[0] are all the indices of the Circles which
-            #  intersect with Circle 0 (as well as the index 0).
+            # We define the remaining indices as those indices that we need to
+            #  evaluate for possible addition to our cluster definition.
+            #  Namely, the list of sets of indices from Circles that intersect
+            #  with eachother.
             remaining_indices = intersections_indices.copy()
-            # Continue until no new cluster is formed (controlled with "added").
+            # We loop indefinitely...
             while True:
                 added = False
-                # For the construction of the cluster under consideration iterate
-                #  over all the lists of indices that intersect with each other.
+                # For the further expansion of the definition of the cluster 
+                #  under consideration we iterate over each set of indices 
+                #  that intersect with each other.
                 for indices in remaining_indices:
-                    # Add the indices to the cluster if any of the indices can be
-                    #  found in the current cluster definition.
+                    # If a Circle's index or the index of one of its
+                    #  intersections is found in the cluster, then we add those indices
+                    #  to the cluster.
                     if len(final_cluster & indices)>0:
                         final_cluster = final_cluster | indices
                         remaining_indices.remove(indices)
                         added = True
+                # ... until no new addition to our current cluster is made.
                 if not added:
                     cluster_list[i] = final_cluster
                     break
-            # We create a new cluster (or rather a kickstart for a cluster) with
-            #  an indices-group of which none of the indices can be found in any
-            #  of the previously constructed clusters.
+            # For the loop to continue we need a proposal for a next cluster.
+            # We create a said proposal with an indices-group (i.e. a Circle's index
+            #  as well as its intersection's indices) of which none of the indices 
+            #  can be found in any of the previously constructed clusters.
             all_indices = set([item for sublist in cluster_list for item in sublist])
             new_clusters_candidates = ([sett for sett in remaining_indices 
                                         if len(sett & all_indices)==0 and len(sett)>0])          
             if len(new_clusters_candidates)>0:
                 cluster_list.append(new_clusters_candidates[0])
-            # Stop if no new cluster is created
+            # We stop the loop if no new cluster (proposal) is created.
             else:
                 break
         # We define some staging results: all clusters, clusters with multiple 
@@ -355,7 +380,7 @@ class Circle(Point):
             encompassment = self.encompass(self[list(isolat)])
             if encompassment == False:
                 cluster_groups.append(isolat)
-        # Store results
+        # Store results.
         self._clusters_indices = cluster_groups
         self.nr_clusters = len(cluster_groups)
         self.isclustered = True
@@ -373,18 +398,18 @@ class Circle(Point):
         def _intersect_indices(indices, self_index):
             '''
             Args:
-                indices: All the indices of the Circles within the cluster.
-                self_index: The index of the Circle under consideration.
+                indices: The indices of the given Circles within the cluster.
+                self_index: The index of the Circle (self) within the cluster.
             
             Returns:
-                A list of indices that can be used to slice only those intersections 
-                between the Circle (with index = self_index) and the other Circles
-                within the cluster.
+                A list of (shifted) indices that can be used to slice the 
+                .intersections property to get those intersections between the Circle 
+                (with cluster-index = self_index) and the other Circles 
+                (with cluster-indices = indices).
                 
             Note: This function is needed since the .intersect() method results in n-1
-                intersections in the event of n Circles, therefore shifting the 
-                index of the original Circles. It might be interseting to add an 
-                intersection with self that equals to None, keeping the index unaltered.
+                intersections in the event of n Circles; Therefore resulting in an
+                index one element shorted than the index of the original Circles.
             '''
             corrected_indices = []
             lower_than = [_ for _ in indices if _<self_index]
@@ -393,18 +418,18 @@ class Circle(Point):
             corrected_indices.extend(higher_than)
             return corrected_indices
         
-        # Assert clusters have been computed
+        # Test that clusters have been computed.
         if self.isclustered == False:
             raise(RuntimeError, "To extract a cluster, compute clusters first.")
-        # Get the specific set of indices as a list and sort
+        # Get the specific set of indices as a list and sort.
         indices_list = list(self._clusters_indices[cluster_index])
         indices_list.sort()
-        # Create a new Circle of the relevant portion of self 
+        # Create a new Circle from the relevant portion of self.
         Clustered_circle = Circle(self[indices_list])
-        # Get the intersections Points for the Circles in the cluster
+        # Get the intersections Points for the Circles in the cluster.
         #  Note that we have to rework the Points to exclude all intersections
         #  between the Cluster's Circles and Circles not included in the cluster.
-        #  We *could* just recompute the .intersections() method on the new instance. 
+        #  (We could just recompute the .intersections() method on the new instance.)
         all_intersections = [self.intersections[_] for _ in indices_list]
         lean_intersections = []
         for i,index in enumerate(indices_list):
@@ -421,11 +446,10 @@ class Circle(Point):
     
     def _all_boundaries(self):
         '''
-        Returns: The xy-coordinates of the intersection points between each of
-            the origin Circles and the other origin Circles as a Point as well as
-            the corresponding Circles. The result is returned only if the 
-            aformentioned intersections are not encompassed by a Circle, i.e. 
-            the intersections lies on the boundary of the Circles.
+        Returns: The intersection Points between each of the origin Circles and 
+            the other origin Circles as a Point as well as the corresponding Circles 
+            if the aformentioned intersections are not encompassed by a Circle, 
+            i.e. the intersections lies on the boundary of the Circles.
         '''
         boundaries_l = []
         circles_l = []
@@ -454,56 +478,82 @@ class Circle(Point):
         '''
         Args:
             boundaries: All intersections which lie on the innner or outer 
-                boundary of the Circle-cluster.
+                boundary of the cluster of Circles.
             inner: Boolean indicating if we are ordering inner boundaries.
             prec: The number of decimals for which the comparisons are made on.
             
         Return:
             The sorted boundaries, i.e. the intersections Points lying on the
-            boundary of the Circles as well as the corresponding center Points
+            boundary of the Circles as well as the corresponding Circles
             and angles.
         '''
         boundaries_l, circles_l = boundaries
 
-        # Params
+        # Variable indicating first loop
         first = True
+        # Create receptacle lists.
         ordered_boundaries_l = []
         ordered_circles_l = []
         ordered_angles_l = []
         remaining_boundaries_l = []
         remaining_circles_l = []
         
-        # Starting point = of the Circles with the leftmost intersections, we select
-        #  that Circle which also has the upmost intersection. From that Circle we
-        #  take the leftmost intersection as starting point. If by any odd chance
-        #  two of its intersections are in fact the leftmost intersections, take
-        #  the one with the lowest y-value.
+        # As a starting points for finding the ordered boundaries we first find 
+        #  the index  of the Circles which have boundaries (i.e. intersections on 
+        #  the boundary) with the lowest overall x-value (can be more than 1).
         xmin = min([_.x.min().round(prec) for _ in boundaries_l])
         xmin_index = [i for i,_ in enumerate(boundaries_l) if _.x.min().round(prec) == xmin]
+        # From those Circles we look which one has a boundary with the highest 
+        #  y-values (can be more than 1).
         ymax_xmin = [boundaries_l[_].y.max().round(prec) for _ in xmin_index]
-        xmin_subindex = [i for i,_ in enumerate(ymax_xmin) if _ == max(ymax_xmin)][0]
+        xmin_subindex = [i for i,_ in enumerate(ymax_xmin) if _ == max(ymax_xmin)]
+        xmin_index = [xmin_index[_] for _ in xmin_subindex]
+        # From those Circles we look which one has a boundary with the lowest y-values
+        ymin_xmin = [boundaries_l[_].y.min().round(prec) for _ in xmin_index]
+        xmin_subindex = int(np.array([i for i,_ in enumerate(ymin_xmin) if _ == min(ymin_xmin)]))
         xmin_index = xmin_index[xmin_subindex]
         previous_i = xmin_index
-        starter_candidates = [_ for _ in boundaries_l[xmin_index] if _.x.round(prec) == xmin]
-        boundary = [_ for _ in starter_candidates if _.y == min(Point(starter_candidates).y)][0]
+        # The boundary from which our discovery process of ordered boundaries 
+        # starts, is the one with the lowest x.
+        boundary = [_ for _ in boundaries_l[xmin_index] if _.x.round(prec) == xmin][0]
+        # We define the according Circle (needed as return) and its centerpoint
+        #  (needed for the method's calculations).
         c = circles_l[xmin_index]
         cp = c.xy
         
+        # We loop indefinitely...
         while True: 
-            # Favor new centerpoint
+            # i indicates the index of the Circle within our cluster from which
+            #  the next boundary will be taken from (to add to our ordered boundaries 
+            #  list). We define i as those indices of the Circles which have boundaries
+            #  that are the same as the previous boundary added to the ordered
+            #  boundaries list.
             i = ([i for i,_ in enumerate(boundaries_l) 
                   if np.any(np.all(_.round(prec)==boundary.round(prec), axis=1))])
+            # We allways favor an index different from the index from which 
+            #  the last boundary was taken from, unless there is no other choice...
             i = [_ for _ in i if _ != previous_i][0] if len(i)>1 else i[0]
+            # ...or we are looking for our first contribution; Then we look for our
+            #  next (or rather first) addition to our ordered boundaries from the 
+            #  Circle from which the starting point was taken from.
             if first:
                 i = previous_i
+            # The candidates as next addition are all the boundaries from the 
+            #  Circle with index i (look above).
             bp = boundaries_l[i]
+            # We define the according Circle, centerpoint and number of boundaries/candidates.
             c = circles_l[i]
             cp = c.xy
             n_bounds = len(bp)
-            # Find the index of the boundary in the bp's
+            # Note that with defining "i" we have correcly found the Circle from
+            #  which the next boundary should be selected from. We now identify the
+            #  index of the individual boundary from those boundaries which match
+            #  the previous addition.
             mask = (bp.round(prec)==boundary.round(prec)).all(axis=1)
             j = int(np.arange(n_bounds)[mask])
-            # Order the bp's excluding the previous boundary
+            # From the boundaries/candidates we now exclude the boundary which
+            #  matches the previous addition, leaving us with one or multiple
+            #  boundaries to choose from as next addition.
             ordered_remainders, angles = bp.drop(j).orderedPoints(cp, bp[j], True)
             if inner:
                 angle = max(angles)
@@ -513,19 +563,23 @@ class Circle(Point):
                 angle = min(angles)
                 # The next boundary is found by taking the first bp of the ordered bp's
                 boundary = ordered_remainders[0]
-            # Break if boundary loop is closed
+            # We break the loop if the ordered boundaries loop is closed, i.e.
+            #  if the first ever addition mathces the last one made.
             if not first and np.all(ordered_boundaries_l[0].round(prec)==boundary.round(prec)):
                 break
-            # Add it to the list as well as the corresponding cp
+            # Add it to the list as well as the corresponding Circle and angle.
             ordered_boundaries_l.append(boundary)
             ordered_circles_l.append(c)
             ordered_angles_l.append(angle)
-            # Reset previous i
+            # Reset previous i.
             previous_i = i
             first = False
         # Collect boundaries which have note been used in the closed circuit, 
         #  i.e. boundaries of 'inner holes'
         try:
+            # We try to identify the boundaries (and their corresponding indices) 
+            #  which have not been used in the orderd boundaries list.
+            # Those boundaries are boundaries of an (or a next) inner hole.
             indices, candidates = zip(*[(i,p) for (i,sublist) in enumerate(boundaries_l) for p in sublist 
                                         if (p.round(prec) != np.array(ordered_boundaries_l).round(prec)).all()])
             remaining_circles = Circle([circles_l[_] for _ in indices]).round(prec)
@@ -539,7 +593,7 @@ class Circle(Point):
                 remaining_circles_l.append(c)
         except ValueError:
             warnings.warn('No boundaries left to categorize.')
-
+            
         return (ordered_boundaries_l,
                 ordered_circles_l,
                 ordered_angles_l,
@@ -554,21 +608,21 @@ class Circle(Point):
             - The inner boundaries of the Circle-cluster in a grouped and clockwise
               order as well as the corresponding circles.
         '''
-        # Assert if the Circles are clustered
+        # Test if the Circles are clustered.
         if self.iscluster == False:
             raise(RuntimeError, "Boundaries should be computed for a specific cluster.")
-        # Indicate boundaries have been computed
+        # Indicate boundaries have been computed.
         self.isbounded = True
-        # Assert if the cluster exists of only 2 or less Circles
+        # Test if the cluster exists of only 2 or less Circles.
         if len(self)<3:
             return None
-        # Compute all the available boundaries
+        # Compute all the available boundaries.
         boundaries_to_order =  self._all_boundaries()
-        # Group and order all the boundaries on being outer boundaries 
+        # Group and order all the boundaries on being outer boundaries.
         ordered_b, ordered_c, ordered_a, remaining_b, remaining_c = self._orderBoundaries(boundaries_to_order)
         self.outer_boundaries = ordered_b, ordered_c, ordered_a
         boundaries_to_order = remaining_b, remaining_c
-        # Group and order all the remaining (inner) boundaries
+        # Group and order all the remaining (inner) boundaries.
         inner_boundaries_l = []
         while len(boundaries_to_order[0])>0:
             ordered_b, ordered_c, ordered_a, remaining_b, remaining_c = self._orderBoundaries(boundaries_to_order, inner=True)
@@ -611,7 +665,7 @@ class Circle(Point):
     def intersectArea(self , circle, show_segments=False):
         '''
         Args:
-            circle: One circle of which we want the know the intersecting area 
+            circle: One circle of which we want to know the intersecting area 
                 off with self.
             show_segments: Boolean indicating if the individual contributions 
                 to the total Area need to be returned.
@@ -635,8 +689,9 @@ class Circle(Point):
         Returns:
             The Area of the cluster of Circles taking into account:
                 - overlapping areas which are added only once.
-                - inner holes of the cluster of Circles.
+                - inner holes of the cluster of Circles which are substracted.
         '''
+        # Test if boundaries have been computed.
         if self.isbounded == False:
             raise(RuntimeError, "Boundaries should be computed in order to compute flatArea.")
         # Case for a cluster of 1 Circle.
@@ -647,26 +702,26 @@ class Circle(Point):
         if len(self)==2:
             A = self[0].intersectArea(self[1])
             return A
-        # Case for a cluster of 2 or more Circles.
+        # Case for a cluster of 3 or more Circles.
         if len(self)>2:
-            # 1. Polygon area
+            # 1. We compute the Polygon area.
             ordered_b, ordered_c, ordered_a = self.outer_boundaries
             ordered_cp = [_.xy for _ in ordered_c]
             ordered_all = np.hstack((ordered_cp, ordered_b)).reshape(-1,2)
             ordered_all = np.append(ordered_all, ordered_all[0].reshape(-1,2), axis=0)
             ordered_all = Point(ordered_all)
             polygon_A = ordered_all.polygonArea()
-            # 2. Area shaved of the Circles when defining the polygon
+            # 2. We compute the Area shaved of the Circles when defining the polygon.
             shaved_A = sum((np.array(ordered_a)/360)*Circle(ordered_c).area())
-            # 3. Included inner hole area(s) that need to be removed
+            # 3. We compute the included inner hole area(s) that need to be removed.
             all_holes_l = []
-            inner_boundaries = self.inner_boundaries.copy()
-            for ordered_b, ordered_c in inner_boundaries:
+            inner_boundaries = self.inner_boundaries.copy() 
+            for ordered_b, ordered_c in inner_boundaries: # The can be more than 1 hole.
                 ordered_all = ordered_b+ordered_b[0]
                 ordered_all = Point(ordered_all)
                 # 3.a. Inner polygon area
                 inner_polygon_A = ordered_all.polygonArea()
-                # 3.b. Included shaved area that needs to be removed from the inner polygon area
+                # 3.b. Included shaved area that needs to be removed from the inner polygon area.
                 cords = [ordered_all[i].distance(ordered_all[i+1]) for i in range(len(ordered_all)-1)]
                 inner_shaved_A_l = [self._circularSegment(ordered_c[i].r, cords[i]) for i in range(len(cords))]
                 inner_shaved_A = sum(inner_shaved_A_l)
@@ -677,7 +732,7 @@ class Circle(Point):
             # Total area
             return polygon_A + shaved_A - all_holes_A 
     
-    def mcArea(self, n_samples=None):
+    def simArea(self, n_samples=None):
         '''
         Returns:
             The approximated area using monte carlo simulations.

@@ -12,9 +12,11 @@ class Point(np.ndarray):
     The Point class is a child class of the numpy.ndarray. It includes a
         number of methods which can be used to calculate metrics between sets 
         of coordinates such as distances, angles, ...
-    Note the difference in notation between:
+    Note the difference in notation between (not applicable in arguments of methods):
         - 'point' which at least represent a set of coordinates in a list, np.ndarray,...
         - 'Point' which represents an instance of the class.
+    Also note that when we refer to Points we mean a single instance of the object
+        existing of multiple rows.
     '''
 
       ###############################
@@ -24,7 +26,7 @@ class Point(np.ndarray):
     def __new__(cls, inputarray):
         '''
         A Point is created from a np.ndarray.
-        The array can exist of a single set of coordinates or multiple, e.g.:
+        The array can exist of a single or multiple points, e.g.:
         - a = Point([5,7])
         - b = Point([[5,7],[13,4]])  
         '''
@@ -62,15 +64,15 @@ class Point(np.ndarray):
     @xy.setter
     def xy(self, value):
         self[:,:] = value
+     
         
     def __getitem__(self,val):
         '''
         If val is an int, then consider it as a row-selection which should
-            result in a Point instance. If a slice, then use numpy's 
-            __getitem__ method.
-        Typical usecase: Selecting a single row from a multiple Point instance
-            should also result in a Point with the correct shape to allow
-            use of the class' methods.
+            result in a Point. In every other case we use numpy's  __getitem__ method.
+        Usecase: Selecting a single row from a multiple Point instance
+            should also result in a Point with the correct shape (i.e. double 
+            enclosing brackets) to allow further use of the class' methods.
         '''
         if type(val)==int:
             return self.__class__(np.asarray(self)[val])
@@ -97,10 +99,10 @@ class Point(np.ndarray):
             x_max: Maximum value for x-coordinates.
             y_min: Minimum value for y-coordinates.
             y_max: Maximum value for y-coordinates.
-            nr_points: The number of xy-coordinates to be produced.
+            nr_points: The number of points to be produced.
         
         Returns: 
-            A np.ndarray of random xy-coordinates.
+            A np.ndarray of random points.
         '''
         x = np.random.uniform(x_min, x_max, nr_points)
         y = np.random.uniform(y_min, y_max, nr_points)
@@ -115,10 +117,10 @@ class Point(np.ndarray):
             x_max: Maximum value for x-coordinates.
             y_min: Minimum value for y-coordinates.
             y_max: Maximum value for y-coordinates.
-            nr_points: The number of xy-coordinates to be produced.
+            nr_points: The number of Points to be produced.
         
         Returns: 
-            A random instance of a Point.
+            A random instance of (a) Point(s).
         '''
         xy_values = cls._random(x_min, x_max, y_min, y_max, nr_points)
         random_point = cls(xy_values)
@@ -128,8 +130,8 @@ class Point(np.ndarray):
     def _populate_lines(cls, m_point, nr_points, jitter_sd):
         '''
         Args:
-            m_point: Multiple Points.
-            nr_points: The number of points to be created.
+            m_point: At least two Points.
+            nr_points: The number of points to be created for each line.
             jitter_sd: The standard deviation of the normal distribution
                 from which the the jitter is sampled.
                 
@@ -139,7 +141,7 @@ class Point(np.ndarray):
             by a set of given Points.
         '''
         populated_lines = np.array([]).reshape(0,2)
-        nr_segments = len(m_point)
+        nr_segments = len(m_point)-1
         
         def _xRange(s_point, s_point_2):
             '''
@@ -174,19 +176,26 @@ class Point(np.ndarray):
                 jitter_sd: The standard deviation of the normal distribution
                     from which the jitter is sampled.
             Returns:
-                Randomized points on the fitted line between 2 Points taking into
-                consideration the maximum and minimum x-coordinates of these 2
-                Points. Also some jitter (based on a normal distribution) is
+                Randomized points on the line between the 2 Points. 
+                Also some jitter (based on a normal distribution) is
                 added as vertical distance from the line.
             '''
+            # Get coefficient and intercept of the line between the two Points.
             a,b = _lineParameters(s_point, s_point_2)
+            # Get the mininmum and maximum values of the two Points.
             x_min, x_max = _xRange(s_point, s_point_2)
+            # Produce random x-values within the calculated range.
             x = np.random.uniform(x_min, x_max, nr_points)
+            # Produce normal-random jitter.
             jitter_values = np.random.normal(0, jitter_sd, nr_points)
+            # Compute corresponding y-values based on the line-equation on which
+            #  the normal-random vertical jitter is added.
             y = (a*x) + b + jitter_values
+            # Return the coordinates as a np.ndarray.
             return np.array(list(zip(x,y)))
     
-        for i in range(nr_segments-1):
+        # For each set of two Points (i.e. a segment) produce points on the line.
+        for i in range(nr_segments):
             populated_line = _populate_line(m_point[i], m_point[i+1], nr_points, jitter_sd)
             populated_lines = np.append(populated_line, populated_lines, axis=0)
         
@@ -196,16 +205,19 @@ class Point(np.ndarray):
     def populate_lines(cls, point, nr_points, jitter_sd=1):
         '''
         Args:
-            point: Multiple Points.
-            nr_points: The number of Points to be created for each line.
-            jitter_sd: the standard deviation of the normal distribution
-                from which the jitter is sampled.
+            point: At least two Points.
+            nr_points: The number of Points to be created.
+            jitter_sd: The standard deviation of the normal distribution
+                from which the the jitter is sampled.
+                
         Returns:
             A number of randomized Points between each set of Points in their 
             given order. This allows one to populate Points along a path defined
             by a set of given Points.
         '''
+        # Produce points with the given args.
         populated_lines = cls._populate_lines(point, nr_points, jitter_sd)
+        # Initialize the points as Points.
         populated_lines_as_Points = Point(populated_lines)
         
         return populated_lines_as_Points
@@ -218,7 +230,8 @@ class Point(np.ndarray):
     def drop(self, row):
         '''
         Args:
-            row: Row-index to be dropped.
+            row: The index of the row to be dropped.
+            
         Returns:
             The Point without the specified row.
         '''
@@ -226,7 +239,6 @@ class Point(np.ndarray):
         upper_end = self[row+1:]
         appended = np.append(lower_end, upper_end, axis=0)
         appended_point = self.__class__(appended)
-        
         return appended_point
     
     def dropna(self):
@@ -236,7 +248,6 @@ class Point(np.ndarray):
         '''
         mask = np.array((np.isnan(self)==False).any(axis=1))
         self_without_nan = self[mask,:]
-        
         return self_without_nan
 
     @staticmethod
@@ -258,8 +269,8 @@ class Point(np.ndarray):
         Args:
             point: One or multiple Points.
         
-        Returns: The euclidean distance(s) between the origin and the (multiple) 
-            Point(s) as a numpy.ndarray.
+        Returns: The euclidean distance(s),  as a numpy.ndarray, between self 
+            and the (multiple) Point(s).
         '''
         s_point_x = self.x
         s_point_y = self.y
@@ -277,10 +288,8 @@ class Point(np.ndarray):
         Args:
             s_point_x: A single x-coordinate as an int, float or numpy.ndarray.
             s_point_y: A single y-coordinate as an int, float or numpy.ndarray.
-            m_point_x: A single or multiple sets of x-coordinates as a
-                numpy.ndarray.
-            m_point_y: A single or multiple sets of y-coordinates as a
-                numpy.ndarray.
+            m_point_x: A single or multiple x-coordinates as a numpy.ndarray.
+            m_point_y: A single or multiple y-coordinates as a numpy.ndarray.
         
         Returns: The angle at which the horizontal line needs to rotate
             clockwise in order to match the line between the s_point and
@@ -297,9 +306,9 @@ class Point(np.ndarray):
         Args:
             point: One or multiple Points.
         
-        Returns: The angles at which the horizontal line needs to rotate
-            clockwise in order to match the line between the origin and
-            the (multiple) point(s) as a numpy.ndarray.
+        Returns: The angles, as a numpy.ndarray, at which the horizontal line 
+            needs to rotate clockwise in order to match the line between self and
+            the (multiple) Point(s).
         '''
         s_point_x = self.x
         s_point_y = self.y
@@ -314,12 +323,12 @@ class Point(np.ndarray):
     def angleBetween(self, point, starting_point):
         '''
         Args:
-            point_or_list: One or multiple Points.
+            point: One or multiple Points.
             starting_point: A Point from which the clockwise angle to the other
                 Points is calculated.
                 
-        Returns: The angles between the starting_point and the point_or_list
-            with the origin as vertex.
+        Returns: The angles, as a np.ndarray, between the starting_point and the 
+            Point(s) with self as vertex.
         '''
         angleOrigin = 180-self.angleOffset(starting_point)
         anglePoints = 180-self.angleOffset(point)
@@ -330,10 +339,10 @@ class Point(np.ndarray):
     def _centroid(m_point_x, m_point_y):
         '''
         Args:
-            m_point_x: A single or multiple x-coordinates as a numpy.ndarray.
-            m_point_y: A single or multiple y-coordinates as a numpy.ndarray.
+            m_point_x: Multiple x-coordinates as a numpy.ndarray.
+            m_point_y: Multiple y-coordinates as a numpy.ndarray.
         
-        Returns: The xy-coordinates of the centroid as a numpy.ndarray.
+        Returns: The point of the centroid as a numpy.ndarray.
         '''
         n_points = len(m_point_x)
         centroid = [m_point_x.sum() / n_points, m_point_y.sum() / n_points]
@@ -341,7 +350,7 @@ class Point(np.ndarray):
     
     def centroid(self):
         '''       
-        Returns: The xy-coordinates of the centroid of the Point instance as a Point.
+        Returns: The centroid of the Points (i.e. self) as a single Point.
         '''
         m_point_x = self.x
         m_point_y = self.y
@@ -354,9 +363,9 @@ class Point(np.ndarray):
     def _orderedIndex(some_angles):
         '''
         Args:
-            some_angle_offsets: A number of angles to sort.
+            some_angles: A least two angles in a np.ndarray.
         
-        Returns: The index of the points in a clockwise order as a numpy.ndarray.
+        Returns: The index, as a numpy.ndarray, of the angles in a clockwise order.
         '''
         ordered_index = (some_angles).argsort(axis=0)
         return ordered_index
@@ -364,9 +373,10 @@ class Point(np.ndarray):
     def orderedPoints(self, centerpoint=None, start_from=None, return_angles=False):
         '''
         Args:
-            centerpoint: Either the centroid as the origin for the clock-pointer 
-                or a given center Point.
-            start_from: If given a Point, it will serve as the starting point 
+            centerpoint: Defaults to the centroid of self as the centerpoint for 
+                the clock-pointer. Otherwise a given center Point is used.
+            start_from: Defaults to the horizontal line as starting point. 
+                Else if given a Point, it will serve as the starting point 
                 for computing the clockwise order.
                 
         Returns:
@@ -399,7 +409,7 @@ class Point(np.ndarray):
             m_point_ordered_y: Multiple y-coordinates in clockwise order
                 as a numpy.ndarray.
         
-        Returns: The area of the polygon bounded by the points as a numpy.ndarray.
+        Returns: The area, as a numpy.ndarray, of the polygon bounded by the points.
         '''
         return 0.5*np.abs(np.dot(m_point_ordered_x.T[0],np.roll(m_point_ordered_y.T[0],1))
                           -np.dot(m_point_ordered_y.T[0],np.roll(m_point_ordered_x.T[0],1)))
@@ -407,7 +417,7 @@ class Point(np.ndarray):
     def polygonArea(self):
         '''
         Returns:
-            The area of the polygon bounded by the points as a numpy.ndarray.
+            The area, as a numpy.ndarray, of the polygon bounded by the Points .
         '''
         m_point_ordered_x = self.x
         m_point_ordered_y = self.y 
