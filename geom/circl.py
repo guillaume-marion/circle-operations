@@ -498,29 +498,15 @@ class Circle(Point):
         remaining_boundaries_l = []
         remaining_circles_l = []
         
-        '''
         # As a starting points for finding the ordered boundaries we first find 
-        #  the index  of the Circles which have boundaries (i.e. intersections on 
-        #  the boundary) with the lowest overall x-value (can be more than 1).
-        xmin = min([_.x.min().round(prec) for _ in boundaries_l])
-        xmin_index = [i for i,_ in enumerate(boundaries_l) if _.x.min().round(prec) == xmin]
-        # From those Circles we look which one has a boundary with the highest 
-        #  y-values (can be more than 1).
-        ymax_xmin = [boundaries_l[_].y.max().round(prec) for _ in xmin_index]
-        xmin_subindex = [i for i,_ in enumerate(ymax_xmin) if _ == max(ymax_xmin)]
-        xmin_index = [xmin_index[_] for _ in xmin_subindex]
-        # From those Circles we look which one has the overall lowest y-value
-        xmin_xmin = [(circles_l[_].x-circles_l[_].r).round(prec) for _ in xmin_index]
-        xmin_subindex = int(np.array([i for i,_ in enumerate(xmin_xmin ) if _ == min(xmin_xmin)]))
-        xmin_index = xmin_index[xmin_subindex]
-        previous_i = xmin_index
-        # The boundary from which our discovery process of ordered boundaries 
-        # starts, is the one with the lowest x.
-        boundary = [_ for _ in boundaries_l[xmin_index] if _.x.round(prec) == xmin][0]
-        '''
+        #  the index  of the Circles which have lowest overall x-value. If there is
+        #  more than one that meets the critiria we simply take the first in the list.
         xmin = min([(_.x-_.r).round(prec) for _ in circles_l])
         xmin_index = [i for i,_ in enumerate(circles_l) if (_.x-_.r).round(prec) == xmin][0]
         previous_i = xmin_index
+        # The boundary from which our discovery process of ordered boundaries 
+        # then starts, is the one with the lowest y. If there is more than one 
+        # that meets the critiria we simply take the first in the list.
         xmin_intersects = min(boundaries_l[xmin_index].y.round(prec))
         boundary = [_ for _ in boundaries_l[xmin_index] if _.y.round(prec) == xmin_intersects][0]
         # We define the according Circle (needed as return) and its centerpoint
@@ -638,13 +624,13 @@ class Circle(Point):
         self.isbounded = True
         self.inner_boundaries = inner_boundaries_l
    
-    def intersectCord(self, circle):
+    def intersectChord(self, circle):
         '''
         Args:
-            circle: The other Circle with whom the cord is created.
+            circle: The other Circle with whom the chord is created.
         
         Returns:
-            The length of the intersecting cord.
+            The length of the intersecting chord.
         '''
         d = self.distance(circle)
         r0 = self.r
@@ -653,16 +639,16 @@ class Circle(Point):
         return a
         
     @staticmethod
-    def _circularSegment(r, cord):
+    def _circularSegment(r, chord):
         '''
         Args:
             r: The radius of the first Circle.
-            cord: The length of the cord for which we want the circular segment.
+            chord: The length of the chord for which we want the circular segment.
         
         Returns:
-            The circular segment delimited by the cord.
+            The circular segment delimited by the chord.
         '''
-        a = cord
+        a = chord
         bR = r
         sr = (1/2)*math.sqrt(4*bR**2-a**2)
         h = bR-sr
@@ -680,7 +666,7 @@ class Circle(Point):
         Returns:
             The intersecting area of two Circles.
         '''
-        a = self.intersectCord(circle)
+        a = self.intersectChord(circle)
         A_self = self._circularSegment(self.r, a)
         A_circle_2 = circle.circularSegment(a)
         A_total = A_self+A_circle_2
@@ -729,8 +715,8 @@ class Circle(Point):
                 # 3.a. Inner polygon area
                 inner_polygon_A = ordered_all.polygonArea()
                 # 3.b. Included shaved area that needs to be removed from the inner polygon area.
-                cords = [ordered_all[i].distance(ordered_all[i+1]) for i in range(len(ordered_all)-1)]
-                inner_shaved_A_l = [self._circularSegment(ordered_c[i].r, cords[i]) for i in range(len(cords))]
+                chords = [ordered_all[i].distance(ordered_all[i+1]) for i in range(len(ordered_all)-1)]
+                inner_shaved_A_l = [self._circularSegment(ordered_c[i].r, chords[i]) for i in range(len(chords))]
                 inner_shaved_A = sum(inner_shaved_A_l)
                 # Total area inner hole
                 inner_hole_A = inner_polygon_A - inner_shaved_A

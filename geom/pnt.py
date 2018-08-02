@@ -423,3 +423,31 @@ class Point(np.ndarray):
         m_point_ordered_y = self.y 
         A = self._polyArea(m_point_ordered_x, m_point_ordered_y)
         return A
+    
+    def polyEncompass(self, point):
+        '''
+        Args:
+            point: The point which needs to be verified if encompassed by the
+                polygon desfined by self.
+                
+        Returns:
+            A boolean indicating encompassment of the Point by the polygon.
+        '''
+        # Relabel point for conciseness.
+        p = point
+        # Define the segments as a list of Points of 2 points.
+        segments = [self[[i,i+1]] for i in range(len(self)-1)]
+        # Number of crossing numbers.
+        nr_cn = 0    
+    
+        # For each segment...
+        for s0,s1 in segments:
+            # If there is an upward ..or.. downward crossing.
+            if ((s0.y <= p.y and s1.y > p.y)   
+                or (s0.y > p.y and s1.y <= p.y)):
+                # We compute the edge-ray intersect x-coordinate.
+                vt = (p.y - s0.y) / float(s1.y - s0.y)
+                if p.x < s0.x + vt * (s1.x - s0.x):
+                    nr_cn += 1  
+    
+        return bool(nr_cn % 2)  

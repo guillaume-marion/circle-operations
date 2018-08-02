@@ -54,7 +54,7 @@ def cn_PnPoly(P, V):
             if P[0] < V[i][0] + vt * (V[i+1][0] - V[i][0]): # P[0] < intersect
                 cn += 1  # a valid crossing of y=P[1] right of P[0]
 
-    return cn % 2   # 0 if even (out), and 1 if odd (in)
+    return bool(cn % 2)  
 
 #===================================================================
 

@@ -410,3 +410,16 @@ print(a,b,c)
 
 
 
+
+#########################
+### Polygon encompass ### 
+poly = Point([[5,5],[5,10],[7.5,7.5],[10,10],[10,8],[8,6],[10,5],[5,5]])
+multip = Point.random(4,11,4,11, 5000)
+for p in multip:
+    isin = poly.polyEncompass(p)
+    if isin:
+        plt.scatter(p.x, p.y, color="green")
+    else:
+        plt.scatter(p.x, p.y, color="orange")
+### Polygon encompass ### 
+#########################
