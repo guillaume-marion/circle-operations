@@ -355,8 +355,11 @@ class Circle(Point):
                         added = True
                 # ... until no new addition to our current cluster is made.
                 if not added:
-                    cluster_list[i] = final_cluster
                     break
+            # Within our final cluster we remove any Circle which is encompassed
+            #  by any of the other Circles within the cluster.
+            to_remove = [cl for cl in final_cluster if self[list(final_cluster)].encompass(self[int(cl)])]
+            cluster_list[i] = final_cluster - set(to_remove)
             # For the loop to continue we need a proposal for a next cluster.
             # We create a said proposal with an indices-group (i.e. a Circle's index
             #  as well as its intersection's indices) of which none of the indices 
@@ -374,15 +377,22 @@ class Circle(Point):
         all_clusters = cluster_list
         cluster_groups = [_ for _ in all_clusters if len(_)>1]
         cluster_isolats = [_ for _ in all_clusters if len(_)==1]
+        final_clusters = []
         # We do not include encompassed Circles in the clusters definition, as
         #  these Circles do not add any information to area calculations.
         for isolat in cluster_isolats:
             encompassment = self.encompass(self[list(isolat)])
             if encompassment == False:
-                cluster_groups.append(isolat)
+                final_clusters.append(isolat)
+        # We do not include encompassed clusters in the clusters definition, as
+        #  these clusters do not add any information to area calculations.
+        for cluster_group in cluster_groups:
+            encompassment = all([self.encompass(_) for _ in self[list(cluster_group)]])
+            if encompassment == False:
+                final_clusters.append(cluster_group)
         # Store results.
-        self._clusters_indices = cluster_groups
-        self.nr_clusters = len(cluster_groups)
+        self._clusters_indices = final_clusters
+        self.nr_clusters = len(final_clusters)
         self.isclustered = True
     
     def get_cluster(self, cluster_index):
@@ -474,7 +484,7 @@ class Circle(Point):
                 circles_l.append(circles_st)
         return boundaries_l, circles_l
     
-    def _orderBoundaries(self, boundaries, inner=False, prec=8):
+    def _orderBoundaries(self, boundaries, inner=False, prec=8, pick=0):
         '''
         Args:
             boundaries: All intersections which lie on the innner or outer 
@@ -494,25 +504,26 @@ class Circle(Point):
         # Create receptacle lists.
         ordered_boundaries_l = []
         ordered_circles_l = []
-        ordered_angles_l = []
         remaining_boundaries_l = []
         remaining_circles_l = []
         
         # As a starting points for finding the ordered boundaries we first find 
-        #  the index  of the Circles which have lowest overall x-value. If there is
-        #  more than one that meets the critiria we simply take the first in the list.
-        xmin = min([(_.x-_.r).round(prec) for _ in circles_l])
-        xmin_index = [i for i,_ in enumerate(circles_l) if (_.x-_.r).round(prec) == xmin][0]
+        #  the index of the Circle with the boundary having the lowest x-value. 
+        #  Since there will be at least two Circles matching that criteria we 
+        #  take the first Circle, unless specified otherwise by the "pick" value.
+        xmin = min([(_.x).round(prec).min() for _ in boundaries_l])
+        xmin_index_l = [i for i,_ in enumerate(boundaries_l) if (_.x).round(prec).min() == xmin]
+        xmin_index = xmin_index_l[pick]
         previous_i = xmin_index
         # The boundary from which our discovery process of ordered boundaries 
-        # then starts, is the one with the lowest y. If there is more than one 
-        # that meets the critiria we simply take the first in the list.
+        # then starts, is the one with the lowest y.
         xmin_intersects = min(boundaries_l[xmin_index].y.round(prec))
         boundary = [_ for _ in boundaries_l[xmin_index] if _.y.round(prec) == xmin_intersects][0]
         # We define the according Circle (needed as return) and its centerpoint
         #  (needed for the method's calculations).
         c = circles_l[xmin_index]
         cp = c.xy
+
         
         # We loop indefinitely...
         while True: 
@@ -549,11 +560,9 @@ class Circle(Point):
             #  boundaries to choose from as next addition.
             ordered_remainders, angles = bp.drop(j).orderedPoints(cp, bp[j], True)
             if inner:
-                angle = max(angles)
                 # The next boundary is found by taking the last bp of the ordered bp's
                 boundary = ordered_remainders[-1]
             else:
-                angle = min(angles)
                 # The next boundary is found by taking the first bp of the ordered bp's
                 boundary = ordered_remainders[0]
             # We break the loop if the ordered boundaries loop is closed, i.e.
@@ -563,7 +572,6 @@ class Circle(Point):
             # Add it to the list as well as the corresponding Circle and angle.
             ordered_boundaries_l.append(boundary)
             ordered_circles_l.append(c)
-            ordered_angles_l.append(angle)
             # Reset previous i.
             previous_i = i
             first = False
@@ -589,7 +597,6 @@ class Circle(Point):
             
         return (ordered_boundaries_l,
                 ordered_circles_l,
-                ordered_angles_l,
                 remaining_boundaries_l,
                 remaining_circles_l)
         
@@ -612,13 +619,20 @@ class Circle(Point):
         # Compute all the available boundaries.
         boundaries_to_order =  self._all_boundaries()
         # Group and order all the boundaries on being outer boundaries.
-        ordered_b, ordered_c, ordered_a, remaining_b, remaining_c = self._orderBoundaries(boundaries_to_order)
-        self.outer_boundaries = ordered_b, ordered_c, ordered_a
+        ordered_b, ordered_c, remaining_b, remaining_c = self._orderBoundaries(boundaries_to_order)
+        # Check if the ordered boundaries result in a single line (indicating wrong start)
+        #  if the case, specify another start from the possible starts.
+        pick_nr = 0
+        if len(ordered_b)<3:
+            pick_nr += 1
+            warnings.warn("Recomputed ordered boundaries.")
+            ordered_b, ordered_c, remaining_b, remaining_c = self._orderBoundaries(boundaries_to_order, pick=pick_nr)
+        self.outer_boundaries = ordered_b, ordered_c
         boundaries_to_order = remaining_b, remaining_c
         # Group and order all the remaining (inner) boundaries.
         inner_boundaries_l = []
         while len(boundaries_to_order[0])>0:
-            ordered_b, ordered_c, ordered_a, remaining_b, remaining_c = self._orderBoundaries(boundaries_to_order, inner=True)
+            ordered_b, ordered_c, remaining_b, remaining_c = self._orderBoundaries(boundaries_to_order, inner=True)
             inner_boundaries_l.append((ordered_b,ordered_c))
             boundaries_to_order = remaining_b, remaining_c
         self.isbounded = True
@@ -677,7 +691,7 @@ class Circle(Point):
     
     def flatArea(self):
         '''
-        The exact method for computing the area of a cluster of Circles.
+        The exact method for computing the area of one cluster of Circles.
         
         Returns:
             The Area of the cluster of Circles taking into account:
@@ -687,43 +701,62 @@ class Circle(Point):
         # Test if boundaries have been computed.
         if self.isbounded == False:
             raise(RuntimeError, "Boundaries should be computed in order to compute flatArea.")
+       
         # Case for a cluster of 1 Circle.
         if len(self)==1:
             A = self.area()
             return A
+        
         # Case for a cluster of 2 Circles.
         if len(self)==2:
             A = self[0].intersectArea(self[1])
             return A
+        
         # Case for a cluster of 3 or more Circles.
         if len(self)>2:
-            # 1. We compute the Polygon area.
-            ordered_b, ordered_c, ordered_a = self.outer_boundaries
-            ordered_cp = [_.xy for _ in ordered_c]
-            ordered_all = np.hstack((ordered_cp, ordered_b)).reshape(-1,2)
-            ordered_all = np.append(ordered_all, ordered_all[0].reshape(-1,2), axis=0)
-            ordered_all = Point(ordered_all)
+            ##############################################
+            ### 1. We compute the outer boundary area. ###
+            ##############################################
+            ### 1.a. We compute the polygon area.
+            # We get the boundaries & corresponding circles.
+            ordered_b, ordered_c = self.outer_boundaries
+            # We close the loop.
+            ordered_all = Point([ordered_b[-1]]+ordered_b)
+            # Compute the area of the polygon.
             polygon_A = ordered_all.polygonArea()
-            # 2. We compute the Area shaved of the Circles when defining the polygon.
+            
+            ### 1.b. We compute the Area shaved of the Circles when defining the polygon.
+            ordered_cp = [_.xy for _ in ordered_c]
+            cp_in_polygon = [ordered_all.polyEncompass(_) for _ in ordered_cp]
+            
             shaved_A = sum((np.array(ordered_a)/360)*Circle(ordered_c).area())
-            # 3. We compute the included inner hole area(s) that need to be removed.
+            
+            ### 1.c. Total area outer boundary.
+            outer_A = polygon_A + shaved_A
+            
+            ###################################################################
+            ### 2. We compute the inner hole area(s) that need to be removed. #
+            ###################################################################
             all_holes_l = []
             inner_boundaries = self.inner_boundaries.copy() 
             for ordered_b, ordered_c in inner_boundaries: # The can be more than 1 hole.
                 ordered_all = ordered_b+ordered_b[0]
                 ordered_all = Point(ordered_all)
-                # 3.a. Inner polygon area
+                ### 2.a. We compute the polygon area.
                 inner_polygon_A = ordered_all.polygonArea()
-                # 3.b. Included shaved area that needs to be removed from the inner polygon area.
+                ### 2.b. Included shaved area that needs to be removed from the inner polygon area.
                 chords = [ordered_all[i].distance(ordered_all[i+1]) for i in range(len(ordered_all)-1)]
                 inner_shaved_A_l = [self._circularSegment(ordered_c[i].r, chords[i]) for i in range(len(chords))]
                 inner_shaved_A = sum(inner_shaved_A_l)
-                # Total area inner hole
+                ### 2.c. Total area inner hole
                 inner_hole_A = inner_polygon_A - inner_shaved_A
                 all_holes_l.append(inner_hole_A)
             all_holes_A = sum(all_holes_l)
-            # Total area
-            return polygon_A + shaved_A - all_holes_A 
+            
+            ##############
+            # Total area #
+            ##############
+            return outer_A - all_holes_A 
     
     def simArea(self, n_samples=None):
         '''

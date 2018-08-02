@@ -165,6 +165,8 @@ for i, resultc in enumerate(result):
 ### correct index of intersections of cluster-results ###
 from geom.circl import Circle, Point
 
+plt.ioff()
+
 p3 = Point([15,7])
 p4 = Point([16,6])
 p = Point([p3,p4])
@@ -191,7 +193,10 @@ for j in range(len(some_cluster)):
         plt.scatter(i1.x, i1.y)
         plt.scatter(i2.x, i2.y)
         filename = str(j)+str(k)
-        #fig.savefig(filename)
+        fig.savefig(filename)
+        plt.close(fig)
+        
+plt.ion()
 ### correct index of intersections of cluster-results ###
 #########################################################
 
@@ -267,13 +272,9 @@ multic.get_cluster(0)
 for i in range(multic.nr_clusters):
     cluster = multic.get_cluster(i)
     cluster.calc_boundaries()
-    
-    ordered_boundaries_p, ordered_boundaries_c,_ = cluster.outer_boundaries
-    ordered_boundaries_cp = [_.xy for _ in ordered_boundaries_c]
-    ordered_boundaries_pp = Point(ordered_boundaries_p)
-    plt.scatter(ordered_boundaries_pp.x, ordered_boundaries_pp.y, color='black')
-    ordered_boundaries = np.hstack((ordered_boundaries_cp, ordered_boundaries_p))
-    ordered_boundaries = Point(ordered_boundaries)
+    ordered_boundaries_p, ordered_boundaries_c, = cluster.outer_boundaries
+    ordered_boundaries = Point(ordered_boundaries_p)
+    plt.scatter(ordered_boundaries.x, ordered_boundaries.y, color='black')
     plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='black')
     for inner_boundaries,_ in cluster.inner_boundaries:
         ordered_boundaries = Point(inner_boundaries)
@@ -286,19 +287,36 @@ for i in range(multic.nr_clusters):
 
 
 
+#########################
+### Polygon encompass ### 
+poly = Point([[5,5],[5,10],[7.5,7.5],[10,10],[10,8],[8,6],[10,5],[5,5]])
+multip = Point.random(4,11,4,11, 5000)
+for p in multip:
+    isin = poly.polyEncompass(p)
+    if isin:
+        plt.scatter(p.x, p.y, color="green")
+    else:
+        plt.scatter(p.x, p.y, color="orange")
+### Polygon encompass ### 
+#########################
+        
+        
+        
+        
+        
 #####################################
 ### outer bound - random clusters ###
 from geom.circl import Circle, Point
 
-multic = Circle.random(5,30,5,30,1,3,10)
+multic = Circle.random(5,30,5,30,1,3,50)
 
 fig,ax = plt.subplots()
 fig.set_size_inches(15,10)
 ax.set_xlim((0, 35))
 ax.set_ylim((0, 35))
-for c in multic:
-    cplot = plt.Circle((c.x, c.y), c.r, color='black', fill=False, alpha=.5)
-    ax.add_artist(cplot)
+#for c in multic:
+#    cplot = plt.Circle((c.x, c.y), c.r, color='black', fill=False, alpha=.5)
+#    ax.add_artist(cplot)
 
 multic.calc_intersections()
 multic.calc_clusters()
@@ -318,51 +336,68 @@ for i in range(multic.nr_clusters):
             ax.add_artist(cplot)
         
     if len(cluster)>2:
+        # For every cluster...
         for c in cluster:
             cplot = plt.Circle((c.x, c.y), c.r, color='green', fill=True, alpha=.25)
             ax.add_artist(cplot)
-        ordered_boundaries_p, ordered_boundaries_c,_ = cluster.outer_boundaries
-        ordered_boundaries_cp = [_.xy for _ in ordered_boundaries_c]
-        ordered_boundaries_pp = Point(ordered_boundaries_p)
-        plt.scatter(ordered_boundaries_pp.x, ordered_boundaries_pp.y, color='black')
-        ordered_boundaries = np.hstack((ordered_boundaries_cp, ordered_boundaries_p))
-        ordered_boundaries = Point(ordered_boundaries)
-        plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='black')
-    for inner_boundaries,_ in cluster.inner_boundaries:
-        ordered_boundaries = Point(inner_boundaries)
-        plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='green')
-        plt.scatter(ordered_boundaries.x, ordered_boundaries.y, c='green')
+            
+        # Get the boundaries & Circles. 
+        ordered_b, ordered_c, = cluster.outer_boundaries
+        # Close the loop.
+        ordered_all = Point([ordered_b[-1]]+ordered_b)
+        # Scatter boundaries and plot segments in dotted lines.
+        plt.scatter(ordered_all.x, ordered_all.y, color='black')
+        plt.plot(ordered_all.x, ordered_all.y, c='black', ls='--')
+        # Get the centerpoints and test for encompassment.
+        ordered_cp = [_.xy for _ in ordered_c]
+        cp_in_polygon = np.array([ordered_all.polyEncompass(_) for _ in ordered_cp])
+        cp_notin_polygon = cp_in_polygon==False
+        # Create the segments (i,i+1) from the closed loop boundaries.
+        segments = [ordered_all[[i,i+1]] for i in range(len(ordered_all)-1)]
+        
+        # Supplementary test for encompassment !!!!!
+        centroids = Point([_.centroid() for _ in segments])
+        distances = [float(ordered_cp[i].distance(_)) for i,_ in enumerate(centroids)]
+        min_distances = [_.distance(centroids).min() for _ in ordered_cp]
+        cp_on_correct_side = np.array(distances)<=np.array(min_distances)
+        
+        mask = (cp_notin_polygon) & (cp_on_correct_side)
+        
+        
+        # Plot the centerpoint and full segment-line if the centerpoint is not encompassed.
+        for i,test in enumerate(mask):
+            if test:
+                plt.scatter(ordered_cp[i].x, ordered_cp[i].y, c='black', marker='P')
+                plt.plot(segments[i].x, segments[i].y, c='black')
+        
+        # For every hole in the cluster...
+        for inner_boundary in cluster.inner_boundaries:
+            # Get the boundaries & Circles. 
+            ordered_b, ordered_c, = inner_boundary
+            # Close the loop.
+            ordered_all = Point([ordered_b[-1]]+ordered_b)
+            # Scatter boundaries and plot segments in dotted lines.
+            plt.scatter(ordered_all .x, ordered_all .y, c='green')
+            plt.plot(ordered_all .x, ordered_all .y, c='green', ls='--')
+            # Get the centerpoints and test for encompassment.
+            ordered_cp = [_.xy for _ in ordered_c]
+            cp_in_polygon = [ordered_all.polyEncompass(_) for _ in ordered_cp]
+            # Create the segments (i,i+1) from the closed loop boundaries.
+            segments = [ordered_all[[i,i+1]] for i in range(len(ordered_all)-1)]
+            # Plot the centerpoint and full segment-line if the centerpoint is not encompassed.
+            for i,test in enumerate(cp_in_polygon):
+                if test:
+                    plt.scatter(ordered_cp[i].x, ordered_cp[i].y, c='green', marker='_')
+                    plt.plot(segments[i].x, segments[i].y, c='green')
 ### outer bound - random clusters ###
 ##################################### 
 
 
-  
-    
-    
-#############################
-### Area with monte carlo ###    
-from geom.circl import Circle, Point
-
-mc = Circle([[5,5,2],[10,10,2]])
-fig,ax = plt.subplots()
-fig.set_size_inches(15,10)
-ax.set_xlim((0, 35))
-ax.set_ylim((0, 35))
-for c in mc:
-    cplot = plt.Circle((c.x, c.y), c.r, color='blue', fill=False, alpha=.5)
-    ax.add_artist(cplot)
-
-mc[0].area()+mc[1].area()
-mc.mcArea()
-### Area with monte carlo ###    
-#############################
 
 
 
-
-
-############################
-### Testing cluster area ### 
+#######################################
+### Testing cluster area vs mc area ### 
 from geom.circl import Circle, Point
 
 # Square without inner hole
@@ -386,15 +421,6 @@ mc.calc_clusters()
 cluster = mc.get_cluster(0)
 cluster.calc_boundaries()
 
-ordered_boundaries_p, ordered_boundaries_c, ordered_angles = cluster.outer_boundaries
-ordered_boundaries_cp = [_.xy for _ in ordered_boundaries_c]
-#ordered_boundaries_pp = Point(ordered_boundaries_p)
-#plt.scatter(ordered_boundaries_pp.x, ordered_boundaries_pp.y, color='black')
-ordered_boundaries = np.hstack((ordered_boundaries_cp, ordered_boundaries_p)).reshape(-1,2)
-ordered_boundaries = np.append(ordered_boundaries, ordered_boundaries[0].reshape(-1,2), axis=0)
-ordered_boundaries = Point(ordered_boundaries)
-plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='black')
-
 # Deduction
 a = ((ordered_boundaries_p[0].distance(ordered_boundaries_p[1])**2)+
      (mc[:-1].area()/2).sum())
@@ -404,22 +430,12 @@ b = cluster.mcArea(300000)
 c = cluster.flatArea()
 
 print(a,b,c)
-### Testing cluster area ### 
-############################
+### Testing cluster area vs mc area ### 
+#######################################
 
 
 
 
 
-#########################
-### Polygon encompass ### 
-poly = Point([[5,5],[5,10],[7.5,7.5],[10,10],[10,8],[8,6],[10,5],[5,5]])
-multip = Point.random(4,11,4,11, 5000)
-for p in multip:
-    isin = poly.polyEncompass(p)
-    if isin:
-        plt.scatter(p.x, p.y, color="green")
-    else:
-        plt.scatter(p.x, p.y, color="orange")
-### Polygon encompass ### 
-#########################
+
+
