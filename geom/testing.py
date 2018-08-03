@@ -1,7 +1,3 @@
-from geom.circl import Circle, Point
-from matplotlib import pyplot as plt
-import numpy as np
-
 
 
 
@@ -9,6 +5,8 @@ import numpy as np
 ######################
 ### stability test ###
 from geom.circl import Circle, Point
+from matplotlib import pyplot as plt
+import numpy as np
 
 # Test initiation
 sp1 = Point([6,12])
@@ -45,6 +43,8 @@ mp3 = Point([sp1,sp2,sp3])
 #################
 ### Intersect ###
 from geom.circl import Circle, Point
+from matplotlib import pyplot as plt
+import numpy as np
 
 c1 = Circle([6,12,4])
 c2 = Circle([10,12,4])
@@ -76,6 +76,8 @@ for p in intersectpoints: #np.array(intersectpoints).reshape(-1,2):
 #####################
 ### Encompassment ###
 from geom.circl import Circle, Point
+from matplotlib import pyplot as plt
+import numpy as np
     
 mc = Circle([c1,c2])
 
@@ -122,6 +124,8 @@ for p in random_p:
 #######################
 ### Circle clusters ###
 from geom.circl import Circle, Point
+from matplotlib import pyplot as plt
+import numpy as np
 
 p1 = Point([5,6])
 p2 = Point([6,7])
@@ -164,6 +168,8 @@ for i, resultc in enumerate(result):
 #########################################################
 ### correct index of intersections of cluster-results ###
 from geom.circl import Circle, Point
+from matplotlib import pyplot as plt
+import numpy as np
 
 plt.ioff()
 
@@ -207,6 +213,8 @@ plt.ion()
 #####################
 ### angle between ###
 from geom.circl import Circle, Point
+from matplotlib import pyplot as plt
+import numpy as np
 
 p = Point([[8,8],[8,12],[12,12],[12,8]])
 cp = Point([10,10])
@@ -224,71 +232,12 @@ p.drop(i).orderedPoints(cp, p[i], return_angles=True)
 
 
 
-#######################################
-### outer bound - multiple clusters ###
+###########################################
+### Polygon encompass - point per point ### 
 from geom.circl import Circle, Point
+from matplotlib import pyplot as plt
+import numpy as np
 
-# No inner boundary hole
-p1 = Point([5,25])
-p2 = Point([6,30])
-p = Point([p1,p2]) 
-multic1 = Circle.populate_lines(p, nr_circles=30, radius_min=1, radius_max=2)
-
-# 1 inner boundary hole
-p1 = Point([25,5])
-p2 = Point([26,15])
-p3 = Point([30,15])
-p4 = Point([31,5])
-p5 = Point([25,5])
-p = Point([p1,p2,p3,p4,p5]) 
-multic2 = Circle.populate_lines(p, nr_circles=30, radius_min=1, radius_max=2)
-
-# 3 inner boundary holes 
-p1 = Point([10,7])
-p2 = Point([20,7])
-p3 = Point([10,22])
-p4 = Point([20,22])
-p5 = Point([10,7])
-p6 = Point([5,14])
-p7 = Point([10,22])
-p = Point([p1,p2,p3,p4,p5,p6,p7]) 
-multic3 = Circle.populate_lines(p, nr_circles=50, radius_min=1, radius_max=2, jitter_sd=0.01)
-
-multic = Circle(np.append(np.append(multic1,multic2, axis=0), multic3, axis=0))
-
-fig,ax = plt.subplots()
-fig.set_size_inches(15,10)
-ax.set_xlim((0, 35))
-ax.set_ylim((0, 35))
-for c in multic:
-    cplot = plt.Circle((c.x, c.y), c.r, color='blue', fill=False, alpha=.5)
-    ax.add_artist(cplot)
-
-multic.calc_intersections()
-multic.calc_clusters()
-
-multic.get_cluster(0)
-
-for i in range(multic.nr_clusters):
-    cluster = multic.get_cluster(i)
-    cluster.calc_boundaries()
-    ordered_boundaries_p, ordered_boundaries_c, = cluster.outer_boundaries
-    ordered_boundaries = Point(ordered_boundaries_p)
-    plt.scatter(ordered_boundaries.x, ordered_boundaries.y, color='black')
-    plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='black')
-    for inner_boundaries,_ in cluster.inner_boundaries:
-        ordered_boundaries = Point(inner_boundaries)
-        plt.plot(ordered_boundaries.x, ordered_boundaries.y, c='green')
-        plt.scatter(ordered_boundaries.x, ordered_boundaries.y, c='green')
-### outer bound - multiple clusters ###
-#######################################
-
-
-
-
-
-#########################
-### Polygon encompass ### 
 poly = Point([[5,5],[5,10],[7.5,7.5],[10,10],[10,8],[8,6],[10,5],[5,5]])
 multip = Point.random(4,11,4,11, 5000)
 for p in multip:
@@ -296,9 +245,23 @@ for p in multip:
     if isin:
         plt.scatter(p.x, p.y, color="green")
     else:
-        plt.scatter(p.x, p.y, color="orange")
-### Polygon encompass ### 
-#########################
+        plt.scatter(p.x, p.y, color="orange", alpha=.25)
+### Polygon encompass - point per point ###
+###########################################
+###########################################
+### Polygon encompass - multiple points ### 
+from geom.circl import Circle, Point
+
+poly = Point([[5,5],[5,10],[7.5,7.5],[10,10],[10,8],[8,6],[10,5],[5,5]])
+for i in range(2500):
+    multip = Point.random(4,11,4,11,2)
+    isin = poly.polyEncompass(multip)
+    if isin:
+        plt.scatter(multip.x, multip.y, color="green")
+    else:
+        plt.scatter(multip.x, multip.y, color="orange", alpha=.25)
+### Polygon encompass - multiple points ### 
+###########################################
         
         
         
@@ -307,8 +270,10 @@ for p in multip:
 #####################################
 ### outer bound - random clusters ###
 from geom.circl import Circle, Point
+from matplotlib import pyplot as plt
+import numpy as np
 
-multic = Circle.random(5,30,5,30,1,3,50)
+multic = Circle.random(5,30,5,30,1,3,100)
 
 fig,ax = plt.subplots()
 fig.set_size_inches(15,10)
@@ -399,6 +364,8 @@ for i in range(multic.nr_clusters):
 #######################################
 ### Testing cluster area vs mc area ### 
 from geom.circl import Circle, Point
+from matplotlib import pyplot as plt
+import numpy as np
 
 # Square without inner hole
 mc = Circle([[4,6,2],

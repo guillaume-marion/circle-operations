@@ -85,7 +85,15 @@ class Point(np.ndarray):
         '''
         return (str(self.__class__.__name__)+"([\n {:>10}\n])"
                 .format(self.__str__()[1:-1]))
-    
+        
+    def __round__(self, decimals=0):
+        '''
+        Defines customer __round__ method which should return class instead of
+            np.ndarry.
+        '''
+        rounded_array = self.round(decimals)
+        rounded_class = self.__class__(rounded_array)
+        return rounded_class
     
       #######################################
      #### Random initialization methods ####
@@ -424,30 +432,37 @@ class Point(np.ndarray):
         A = self._polyArea(m_point_ordered_x, m_point_ordered_y)
         return A
     
-    def polyEncompass(self, point):
+    def polyEncompass(self, point, func=all):
         '''
         Args:
-            point: The point which needs to be verified if encompassed by the
+            point: The point(s) which needs to be verified if encompassed by the
                 polygon desfined by self.
+            func: The aggregation function for the boolean list.
                 
         Returns:
             A boolean indicating encompassment of the Point by the polygon.
         '''
         # Relabel point for conciseness.
-        p = point
+        mp = point
         # Define the segments as a list of Points of 2 points.
         segments = [self[[i,i+1]] for i in range(len(self)-1)]
-        # Number of crossing numbers.
-        nr_cn = 0    
+        # Receptacle for all ecompassment tests.
+        all_encompassments = []
+
+        for p in mp:
+            # Number of crossing numbers.
+            nr_cn = 0 
+            # For each segment...
+            for s0,s1 in segments:
+                # If there is an upward ..or.. downward crossing.
+                if ((s0.y <= p.y and s1.y > p.y)   
+                    or (s0.y > p.y and s1.y <= p.y)):
+                    # We compute the edge-ray intersect x-coordinate.
+                    vt = (p.y - s0.y) / float(s1.y - s0.y)
+                    if p.x < s0.x + vt * (s1.x - s0.x):
+                        nr_cn += 1  
+            overlap = np.array((p==self).all(axis=1)).any()
+            encompassment = bool(nr_cn % 2) or overlap
+            all_encompassments.append(encompassment)
     
-        # For each segment...
-        for s0,s1 in segments:
-            # If there is an upward ..or.. downward crossing.
-            if ((s0.y <= p.y and s1.y > p.y)   
-                or (s0.y > p.y and s1.y <= p.y)):
-                # We compute the edge-ray intersect x-coordinate.
-                vt = (p.y - s0.y) / float(s1.y - s0.y)
-                if p.x < s0.x + vt * (s1.x - s0.x):
-                    nr_cn += 1  
-    
-        return bool(nr_cn % 2)  
+        return func(all_encompassments)

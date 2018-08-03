@@ -195,8 +195,6 @@ class Circle(Point):
             raise OverflowError('tangent circles')
         # Warn for non-intersecting circles.
         mask = ((d>r0+r1) | (d<abs(r0-r1)))
-        if mask.sum()>0:
-            warnings.warn('no intersection')
         # Compute intersections in a vectorized fashion.
         ### Comppute the distance between self and the line passing the intersection 
         ###  points.
@@ -310,6 +308,7 @@ class Circle(Point):
         # Create receptacles.
         intersections_indices = []
         nr_intersections = []
+        removed = set()
         # For each Circle...
         for i,_ in enumerate(self.intersections):
             # ...create a mask of all the Circles which do not intersect with it.
@@ -359,14 +358,16 @@ class Circle(Point):
             # Within our final cluster we remove any Circle which is encompassed
             #  by any of the other Circles within the cluster.
             to_remove = [cl for cl in final_cluster if self[list(final_cluster)].encompass(self[int(cl)])]
+            removed = removed | set(to_remove)
             cluster_list[i] = final_cluster - set(to_remove)
             # For the loop to continue we need a proposal for a next cluster.
             # We create a said proposal with an indices-group (i.e. a Circle's index
             #  as well as its intersection's indices) of which none of the indices 
             #  can be found in any of the previously constructed clusters.
             all_indices = set([item for sublist in cluster_list for item in sublist])
+            all_indices_plus = all_indices | removed
             new_clusters_candidates = ([sett for sett in remaining_indices 
-                                        if len(sett & all_indices)==0 and len(sett)>0])          
+                                        if (len(sett & all_indices_plus)==0 and len(sett)>0)])          
             if len(new_clusters_candidates)>0:
                 cluster_list.append(new_clusters_candidates[0])
             # We stop the loop if no new cluster (proposal) is created.
@@ -484,13 +485,14 @@ class Circle(Point):
                 circles_l.append(circles_st)
         return boundaries_l, circles_l
     
-    def _orderBoundaries(self, boundaries, inner=False, prec=8, pick=0):
+    def _orderBoundaries(self, boundaries, inner=False, start_index=None, prec=8):
         '''
         Args:
             boundaries: All intersections which lie on the innner or outer 
                 boundary of the cluster of Circles.
             inner: Boolean indicating if we are ordering inner boundaries.
             prec: The number of decimals for which the comparisons are made on.
+            index: The index of the starting point.
             
         Return:
             The sorted boundaries, i.e. the intersections Points lying on the
@@ -506,22 +508,31 @@ class Circle(Point):
         ordered_circles_l = []
         remaining_boundaries_l = []
         remaining_circles_l = []
-        
-        # As a starting points for finding the ordered boundaries we first find 
-        #  the index of the Circle with the boundary having the lowest x-value. 
-        #  Since there will be at least two Circles matching that criteria we 
-        #  take the first Circle, unless specified otherwise by the "pick" value.
-        xmin = min([(_.x).round(prec).min() for _ in boundaries_l])
-        xmin_index_l = [i for i,_ in enumerate(boundaries_l) if (_.x).round(prec).min() == xmin]
-        xmin_index = xmin_index_l[pick]
-        previous_i = xmin_index
-        # The boundary from which our discovery process of ordered boundaries 
-        # then starts, is the one with the lowest y.
-        xmin_intersects = min(boundaries_l[xmin_index].y.round(prec))
-        boundary = [_ for _ in boundaries_l[xmin_index] if _.y.round(prec) == xmin_intersects][0]
+        # If a starting index is provided (for the Circle and one of its 
+        #  boundaries) then use that starting index.
+        if start_index:
+            start_cindex, start_bindex = start_index
+            boundary = boundaries_l[start_cindex][start_bindex]
+            previous_i = start_cindex
+        # If no starting index is provided, we make a best guess for a start.
+        else:
+            # As a starting points for finding the ordered boundaries we first find 
+            #  the index of the Circle with the boundary having the lowest x-value. 
+            xmin = min([(_.x).round(prec).min() for _ in boundaries_l])
+            start_cindex_l = [i for i,_ in enumerate(boundaries_l) if (_.x).round(prec).min() == xmin]
+            # We pick the Circle with the highest centerpoint (usefull for 
+            #  inner boundaries)
+            random_subindex = np.random.randint(len(start_cindex_l))
+            start_cindex = start_cindex_l[random_subindex ]
+            previous_i = start_cindex
+            # The boundary from which our discovery process of ordered boundaries 
+            #  then starts, is the one with the lowest y.
+            ymin = min(boundaries_l[start_cindex].y.round(prec))
+            boundary = [_ for _ in boundaries_l[start_cindex] if _.y.round(prec) == ymin][0]
+
         # We define the according Circle (needed as return) and its centerpoint
         #  (needed for the method's calculations).
-        c = circles_l[xmin_index]
+        c = circles_l[start_cindex]
         cp = c.xy
 
         
@@ -562,6 +573,14 @@ class Circle(Point):
             if inner:
                 # The next boundary is found by taking the last bp of the ordered bp's
                 boundary = ordered_remainders[-1]
+                # For the first addidition we take a look at the angle.
+                if first:
+                    max_angle = max(angles)
+                    # If the angle is smaller than 180° this indicates a wrong start
+                    #  and we return None so that the method can be repeated with
+                    #  another index-seed.
+                    if max_angle < 270:
+                        return None
             else:
                 # The next boundary is found by taking the first bp of the ordered bp's
                 boundary = ordered_remainders[0]
@@ -593,7 +612,7 @@ class Circle(Point):
                 remaining_boundaries_l.append(p)
                 remaining_circles_l.append(c)
         except ValueError:
-            warnings.warn('No boundaries left to categorize.')
+            pass
             
         return (ordered_boundaries_l,
                 ordered_circles_l,
@@ -604,13 +623,13 @@ class Circle(Point):
         '''
         Returns:
             - The outer boundaries of the Circle-cluster in a clockwise order as well
-              as the corresponding circles and angles.
+              as the corresponding circles.
             - The inner boundaries of the Circle-cluster in a grouped and clockwise
               order as well as the corresponding circles.
         '''
         # Test if the Circles are clustered.
         if self.iscluster == False:
-            raise(RuntimeError, "Boundaries should be computed for a specific cluster.")
+            raise(RuntimeError, "Boundaries should be computed for a specific cluster.")  
         # Indicate boundaries have been computed.
         self.isbounded = True
         # Test if the cluster exists of only 2 or less Circles.
@@ -618,21 +637,57 @@ class Circle(Point):
             return None
         # Compute all the available boundaries.
         boundaries_to_order =  self._all_boundaries()
-        # Group and order all the boundaries on being outer boundaries.
-        ordered_b, ordered_c, remaining_b, remaining_c = self._orderBoundaries(boundaries_to_order)
-        # Check if the ordered boundaries result in a single line (indicating wrong start)
-        #  if the case, specify another start from the possible starts.
-        pick_nr = 0
-        if len(ordered_b)<3:
-            pick_nr += 1
-            warnings.warn("Recomputed ordered boundaries.")
-            ordered_b, ordered_c, remaining_b, remaining_c = self._orderBoundaries(boundaries_to_order, pick=pick_nr)
+        
+        ########################
+        ### OUTER BOUNDARIES ###
+        ########################
+        # Loop indefinitely unless...
+        indices_combos = [(i,j) for (i,sublist) in enumerate(boundaries_to_order[0]) 
+                                for (j,item) in enumerate(sublist)]
+        counter = -1
+        while True:
+            selected_index = indices_combos[counter] if counter>-1 else None
+            # Group and order all the boundaries on being outer boundaries.
+            ordered_boundaries = self._orderBoundaries(boundaries_to_order, start_index=selected_index)
+            ordered_b, ordered_c, remaining_b, remaining_c = ordered_boundaries 
+            # Check if the ordered boundaries result in a polygon that encompasses 
+            #  all boundaries.
+            polygon = round(Point([ordered_b[-1]]+ordered_b),8)
+            polygon_encompall = all([polygon.polyEncompass(round(_,8)) for _ in boundaries_to_order[0]])
+            #... the created polygon encompasses all boundaries.
+            if polygon_encompall:
+                break
+            # If not, we specify another start from the possible starts.
+            counter += 1
+        # Print information about the outer boundary discovery process.
+        print("Found a correct outer boundary after {} attempt(s).".format(counter+2))
+        # Store the results
         self.outer_boundaries = ordered_b, ordered_c
         boundaries_to_order = remaining_b, remaining_c
-        # Group and order all the remaining (inner) boundaries.
+        
+        ########################
+        ### INNER BOUNDARIES ###
+        ########################
         inner_boundaries_l = []
+        # Loop as long as there are (inner) boundaries to order.
         while len(boundaries_to_order[0])>0:
-            ordered_b, ordered_c, remaining_b, remaining_c = self._orderBoundaries(boundaries_to_order, inner=True)
+            # Keep looking for a correct (inner) polygon unless...
+            counter = -1
+            indices_combos = [(i,j) for (i,sublist) in enumerate(boundaries_to_order[0]) 
+                                    for (j,item) in enumerate(sublist)]
+            while True:
+                selected_index = indices_combos[counter] if counter>-1 else None
+                # Apply the method.
+                ordered_boundaries = self._orderBoundaries(boundaries_to_order, inner=True, start_index=selected_index)
+                #...there is actually a result.
+                if ordered_boundaries != None:
+                    break
+                # If not, we specify another start from the possible starts.
+                counter += 1
+            # Print information about the innner boundary discovery process.
+            print("Found a correct inner boundary after {} attempt(s).".format(counter+2))
+            # Store the inner boundaries results.
+            ordered_b, ordered_c, remaining_b, remaining_c = ordered_boundaries
             inner_boundaries_l.append((ordered_b,ordered_c))
             boundaries_to_order = remaining_b, remaining_c
         self.isbounded = True
