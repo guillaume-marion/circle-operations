@@ -3,7 +3,6 @@ from geom.pnt import Point
 
 # Library imports
 import math
-import warnings
 import numpy as np
 
 
@@ -671,7 +670,7 @@ class Circle(Point):
         inner_boundaries_l = []
         # Loop as long as there are (inner) boundaries to order.
         while len(boundaries_to_order[0])>0:
-            # Keep looking for a correct (inner) polygon unless...
+            # Keep looking for an inner boundary until...
             counter = -1
             indices_combos = [(i,j) for (i,sublist) in enumerate(boundaries_to_order[0]) 
                                     for (j,item) in enumerate(sublist)]
@@ -685,7 +684,7 @@ class Circle(Point):
                 # If not, we specify another start from the possible starts.
                 counter += 1
             # Print information about the innner boundary discovery process.
-            print("Found a correct inner boundary after {} attempt(s).".format(counter+2))
+            print("(Re)computed inner boundary {} time(s).".format(counter+2))
             # Store the inner boundaries results.
             ordered_b, ordered_c, remaining_b, remaining_c = ordered_boundaries
             inner_boundaries_l.append((ordered_b,ordered_c))
@@ -744,7 +743,7 @@ class Circle(Point):
         else:
             return A_total
     
-    def flatArea(self):
+    def flatArea(self, return_edge_cases=False):
         '''
         The exact method for computing the area of one cluster of Circles.
         
@@ -781,10 +780,34 @@ class Circle(Point):
             polygon_A = ordered_all.polygonArea()
             
             ### 1.b. We compute the Area shaved of the Circles when defining the polygon.
+            # Get the ordered centerpoints.
             ordered_cp = [_.xy for _ in ordered_c]
-            cp_in_polygon = [ordered_all.polyEncompass(_) for _ in ordered_cp]
-            
-            shaved_A = sum((np.array(ordered_a)/360)*Circle(ordered_c).area())
+            # Test each centerpoint for encompassment by the polygon.
+            cp_in_polygon = np.array([ordered_all.polyEncompass(_) for _ in ordered_cp])
+            cp_notin_polygon = cp_in_polygon==False
+            # Create the segments from the closed loop boundaries.
+            segments = [ordered_all[[i,i+1]] for i in range(len(ordered_all)-1)]
+            # We identify on which side the centerpoints lies of the segment (outwards or in).
+            centroids = Point([_.centroid() for _ in segments])
+            distances = [float(ordered_cp[i].distance(_)) for i,_ in enumerate(centroids)] # This should actually be distances to the line-segment and not the centroid!
+            min_distances = [_.distance(centroids).min() for _ in ordered_cp]
+            cp_outwards = np.array(distances)<=np.array(min_distances)
+            # Combine both rules and keep track of those edge case cp's.
+            mask = (cp_notin_polygon) & (cp_outwards)
+            outer_edge_cp = Point([ordered_cp])[mask]
+            # Compute the circular segments
+            chords = [segment[0].distance(segment[1]) for segment in segments]
+            circ_segments_A = [self._circularSegment(ordered_c[i].r, chords[i])[0] for i in range(len(chords))]
+            circ_segments_A = np.array(circ_segments_A)
+            # Compute the Circles' area.
+            circ_A = Circle(ordered_c).area()
+            # Apply the mask: if the centerpoint is not in the polygon and faces 
+            #  outwards of the segment, then the area that needs to be added is 
+            #  equal to the Circle's area - the circular segment. Otherwise the 
+            #  area to be added is equal to the circular segment only.
+            shaved_A_p1 = sum(circ_A[mask] - circ_segments_A[mask])
+            shaved_A_p2 = sum(circ_segments_A[mask==False])
+            shaved_A = shaved_A_p1 + shaved_A_p2
             
             ### 1.c. Total area outer boundary.
             outer_A = polygon_A + shaved_A
@@ -792,26 +815,55 @@ class Circle(Point):
             ###################################################################
             ### 2. We compute the inner hole area(s) that need to be removed. #
             ###################################################################
+            # For each set of inner boundaries.
             all_holes_l = []
+            inner_edge_cp_l = []
             inner_boundaries = self.inner_boundaries.copy() 
             for ordered_b, ordered_c in inner_boundaries: # The can be more than 1 hole.
-                ordered_all = ordered_b+ordered_b[0]
-                ordered_all = Point(ordered_all)
                 ### 2.a. We compute the polygon area.
+                # We close the loop.
+                ordered_all = Point([ordered_b[-1]]+ordered_b)
+                # Compute the area of the polygon.
                 inner_polygon_A = ordered_all.polygonArea()
+                
                 ### 2.b. Included shaved area that needs to be removed from the inner polygon area.
-                chords = [ordered_all[i].distance(ordered_all[i+1]) for i in range(len(ordered_all)-1)]
-                inner_shaved_A_l = [self._circularSegment(ordered_c[i].r, chords[i]) for i in range(len(chords))]
-                inner_shaved_A = sum(inner_shaved_A_l)
+                # Get the ordered centerpoints.
+                ordered_cp = [_.xy for _ in ordered_c]
+                # Test each centerpoint for encompassment by the polygon and keep track.
+                cp_in_polygon = np.array([ordered_all.polyEncompass(_) for _ in ordered_cp])
+                mask = cp_in_polygon
+                inner_edge_cp_l.append(Point([ordered_cp])[mask])
+                # Create the segments from the closed loop boundaries.
+                segments = [ordered_all[[i,i+1]] for i in range(len(ordered_all)-1)]
+                # Compute the circular segments
+                chords = [segment[0].distance(segment[1]) for segment in segments]
+                circ_segments_A = [self._circularSegment(ordered_c[i].r, chords[i])[0] for i in range(len(chords))]
+                circ_segments_A = np.array(circ_segments_A)
+                # Compute the Circles' area.
+                circ_A = Circle(ordered_c).area()
+                # Apply the mask: if the centerpoint is in the polygon then the
+                #  area that needs to be substracted from the inner hole is equal 
+                #  to the Circle's area - the circular segment. Otherwise the 
+                #  area to be substracted is equal to the circular segment only.
+                inner_shaved_A_p1 = sum(circ_A[mask] - circ_segments_A[mask])
+                inner_shaved_A_p2 = sum(circ_segments_A[mask==False])
+                inner_shaved_A = inner_shaved_A_p1 + inner_shaved_A_p2
+                
                 ### 2.c. Total area inner hole
                 inner_hole_A = inner_polygon_A - inner_shaved_A
                 all_holes_l.append(inner_hole_A)
+            inner_edge_cp_l = [item for sublist in inner_edge_cp_l for item in sublist]
+            inner_edge_cp = Point(inner_edge_cp_l) if len(inner_edge_cp_l)>0 else None
+                
             all_holes_A = sum(all_holes_l)
             
             ##############
             # Total area #
             ##############
-            return outer_A - all_holes_A 
+            if return_edge_cases:
+                return outer_A - all_holes_A, outer_edge_cp, inner_edge_cp 
+            else:
+                return outer_A - all_holes_A
     
     def simArea(self, n_samples=None):
         '''

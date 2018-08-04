@@ -264,9 +264,9 @@ for i in range(2500):
 ###########################################
         
         
-        
-        
-        
+ 
+
+
 #####################################
 ### outer bound - random clusters ###
 from geom.circl import Circle, Point
@@ -279,16 +279,12 @@ fig,ax = plt.subplots()
 fig.set_size_inches(15,10)
 ax.set_xlim((0, 35))
 ax.set_ylim((0, 35))
-#for c in multic:
-#    cplot = plt.Circle((c.x, c.y), c.r, color='black', fill=False, alpha=.5)
-#    ax.add_artist(cplot)
 
 multic.calc_intersections()
 multic.calc_clusters()
 
 for i in range(multic.nr_clusters):
     cluster = multic.get_cluster(i)
-    cluster.calc_boundaries()
     
     if len(cluster)==1:
         c = cluster[0]
@@ -306,54 +302,32 @@ for i in range(multic.nr_clusters):
             cplot = plt.Circle((c.x, c.y), c.r, color='green', fill=True, alpha=.25)
             ax.add_artist(cplot)
             
-        # Get the boundaries & Circles. 
-        ordered_b, ordered_c, = cluster.outer_boundaries
+        cluster.calc_boundaries()
+        # Get the outer boundaries & Circles. 
+        ordered_b, _ = cluster.outer_boundaries
         # Close the loop.
         ordered_all = Point([ordered_b[-1]]+ordered_b)
         # Scatter boundaries and plot segments in dotted lines.
         plt.scatter(ordered_all.x, ordered_all.y, color='black')
-        plt.plot(ordered_all.x, ordered_all.y, c='black', ls='--')
-        # Get the centerpoints and test for encompassment.
-        ordered_cp = [_.xy for _ in ordered_c]
-        cp_in_polygon = np.array([ordered_all.polyEncompass(_) for _ in ordered_cp])
-        cp_notin_polygon = cp_in_polygon==False
-        # Create the segments (i,i+1) from the closed loop boundaries.
-        segments = [ordered_all[[i,i+1]] for i in range(len(ordered_all)-1)]
-        
-        # Supplementary test for encompassment !!!!!
-        centroids = Point([_.centroid() for _ in segments])
-        distances = [float(ordered_cp[i].distance(_)) for i,_ in enumerate(centroids)]
-        min_distances = [_.distance(centroids).min() for _ in ordered_cp]
-        cp_on_correct_side = np.array(distances)<=np.array(min_distances)
-        
-        mask = (cp_notin_polygon) & (cp_on_correct_side)
-        
-        
-        # Plot the centerpoint and full segment-line if the centerpoint is not encompassed.
-        for i,test in enumerate(mask):
-            if test:
-                plt.scatter(ordered_cp[i].x, ordered_cp[i].y, c='black', marker='P')
-                plt.plot(segments[i].x, segments[i].y, c='black')
+        plt.plot(ordered_all.x, ordered_all.y, c='black')
         
         # For every hole in the cluster...
         for inner_boundary in cluster.inner_boundaries:
             # Get the boundaries & Circles. 
-            ordered_b, ordered_c, = inner_boundary
+            ordered_b, _ = inner_boundary
             # Close the loop.
             ordered_all = Point([ordered_b[-1]]+ordered_b)
             # Scatter boundaries and plot segments in dotted lines.
             plt.scatter(ordered_all .x, ordered_all .y, c='green')
             plt.plot(ordered_all .x, ordered_all .y, c='green', ls='--')
-            # Get the centerpoints and test for encompassment.
-            ordered_cp = [_.xy for _ in ordered_c]
-            cp_in_polygon = [ordered_all.polyEncompass(_) for _ in ordered_cp]
-            # Create the segments (i,i+1) from the closed loop boundaries.
-            segments = [ordered_all[[i,i+1]] for i in range(len(ordered_all)-1)]
-            # Plot the centerpoint and full segment-line if the centerpoint is not encompassed.
-            for i,test in enumerate(cp_in_polygon):
-                if test:
-                    plt.scatter(ordered_cp[i].x, ordered_cp[i].y, c='green', marker='_')
-                    plt.plot(segments[i].x, segments[i].y, c='green')
+            
+        # Calculate Area (and edge case circles)
+        A, o, i = cluster.flatArea(return_edge_cases=True)
+        plt.scatter(o.x, o.y, c='black', marker='P')
+        try:
+            plt.scatter(i.x, i.y, c='green', marker='_')     
+        except:
+            i=None
 ### outer bound - random clusters ###
 ##################################### 
 
