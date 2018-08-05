@@ -1,45 +1,3 @@
-
-
-
-
-######################
-### stability test ###
-from geom.circl import Circle, Point
-from matplotlib import pyplot as plt
-import numpy as np
-
-# Test initiation
-sp1 = Point([6,12])
-sp2 = Point([8,10])
-sp3 = Point([6,10])
-mp1 = Point([sp1,sp2])
-mp2 = Point([sp2,sp3])
-# Test __repr__
-sp1
-mp1
-# Test __str__
-print(sp1)
-print(mp1)
-# Test setter
-sp1.x=7
-if (sp1 == Point([7,12])).sum()<2:
-    raise ValueError
-sp1 = Point([6,12])
-mp2.x=np.array([[9],[7]])
-if (mp2 == Point([[9,10],[7,10]])).sum()<4:
-    raise ValueError
-mp2 = Point([sp2,sp3])
-# Test method
-sp1.distance(sp2)
-sp1.distance(mp2)
-mp3 = Point([sp1,sp2,sp3])
-### stability test ###
-######################
-
-
-
-
-
 #################
 ### Intersect ###
 from geom.circl import Circle, Point
@@ -127,21 +85,9 @@ from geom.circl import Circle, Point
 from matplotlib import pyplot as plt
 import numpy as np
 
-p1 = Point([5,6])
-p2 = Point([6,7])
-p = Point([p1,p2])
-multic1 = Circle.populate_lines(p, nr_circles=15, radius_min=1, radius_max=4)
-p3 = Point([15,7])
-p4 = Point([16,6])
-p = Point([p3,p4])
-multic2 = Circle.populate_lines(p, nr_circles=15, radius_min=1, radius_max=4)
-multic = Circle([multic1,multic2])
-mpc = Circle([[25,4,2],[25,7,2],[25,10,2]])
-multic = Circle(np.append(multic,mpc,axis=0))
-c = Circle([10,20,2])
-multic = Circle(np.append(c,multic,axis=0))
-c = Circle([10,20,1])
-multic = Circle(np.append(c,multic,axis=0))
+mc1 = Circle.random(5,10,5,25,1,3,10)
+mc2 = Circle.random(20,25,5,25,1,3,10)
+multic = Circle(np.append(mc1,mc2,axis=0))
 
 multic.calc_intersections()
 multic.calc_clusters()
@@ -153,13 +99,12 @@ fig.set_size_inches(15,10)
 ax.set_xlim((0, 30))
 ax.set_ylim((0, 30))
 for i, resultc in enumerate(result):
-    colors = ['black','red','blue','orange']
+    colors = ['black','red','blue','orange','green','yellow','pink']
     for c in resultc:
         cplot = plt.Circle((c.x, c.y), c.r, color=colors[i], fill=False)
         ax.add_artist(cplot)
 ### Circle clusters ###
 #######################
-
 
 
 
@@ -342,12 +287,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 # Square without inner hole
-mc = Circle([[4,6,2],
-             [6,8,2],
-             [8,6,2],
-             [6,4,2],
-             [6,6,2]])
-    
+mc = Circle.random(15,25,15,25,0,4,30)
 fig,ax = plt.subplots()
 fig.set_size_inches(15,10)
 ax.set_xlim((0, 35))
@@ -362,21 +302,11 @@ mc.calc_clusters()
 cluster = mc.get_cluster(0)
 cluster.calc_boundaries()
 
-# Deduction
-a = ((ordered_boundaries_p[0].distance(ordered_boundaries_p[1])**2)+
-     (mc[:-1].area()/2).sum())
-# Simulation
-b = cluster.mcArea(300000)
 # Exact
-c = cluster.flatArea()
+a = cluster.flatArea()
+# Simulation
+b = cluster.simArea(30000)
 
-print(a,b,c)
+print(a,b)
 ### Testing cluster area vs mc area ### 
 #######################################
-
-
-
-
-
-
-

@@ -112,52 +112,6 @@ class Circle(Point):
         random_circle = cls(xyr_values)
         return random_circle
     
-    @classmethod
-    def _populate_lines(cls, m_point, nr_circles, jitter_sd, radius_min, radius_max):
-        '''
-        Args:
-            m_point: At least two Points.
-            nr_circles: The number of circles to be created for each line.
-            jitter_sd: The standard deviation of the normal distribution
-                from which the jitter is sampled.
-            radius_min: The minimum value for the radii.
-            radius_max: The maximum value for the radii.
-            
-        Returns:
-            A number of randomized circles between each set of Points in their 
-            given order. This allows one to populate circles along a path defined
-            by a set of given Points.
-        '''
-        # Populate points
-        populated_lines = super(Circle, cls)._populate_lines(m_point, nr_circles, jitter_sd)
-        # Add random radii
-        random_radii = np.random.uniform(radius_min, radius_max, len(populated_lines))
-        random_radii = random_radii.reshape(-1,1)
-        populated_lines = np.append(populated_lines, random_radii, axis=1)
-        return populated_lines
-    
-    @classmethod
-    def populate_lines(cls, point, nr_circles, jitter_sd=1, radius_min=2, radius_max=2):
-        '''
-        Args:
-            m_point: At least two Points.
-            nr_circles: The number of Circles to be created for each line.
-            jitter_sd: The standard deviation of the normal distribution
-                from which the jitter is sampled.
-            radius_min: The minimum value for the radii.
-            radius_max: The maximum value for the radii.
-        Returns:
-            A number of randomized Circles between each set of Points in their 
-            given order. This allows one to populate Circles along a path defined
-            by a set of given Points.
-        '''
-        # Produce circles with the given args.
-        populated_lines = cls._populate_lines(point, nr_circles, jitter_sd, radius_min, radius_max)
-        # Initialize the circles as Circles.
-        populated_lines_as_Circles = Circle(populated_lines)
-        
-        return populated_lines_as_Circles
-    
     
       ######################
      #### Core methods ####
@@ -618,7 +572,7 @@ class Circle(Point):
                 remaining_boundaries_l,
                 remaining_circles_l)
         
-    def calc_boundaries(self):
+    def calc_boundaries(self, silent=True):
         '''
         Returns:
             - The outer boundaries of the Circle-cluster in a clockwise order as well
@@ -659,7 +613,8 @@ class Circle(Point):
             # If not, we specify another start from the possible starts.
             counter += 1
         # Print information about the outer boundary discovery process.
-        print("Found a correct outer boundary after {} attempt(s).".format(counter+2))
+        if not silent:
+            print("Found a correct outer boundary after {} attempt(s).".format(counter+2))
         # Store the results
         self.outer_boundaries = ordered_b, ordered_c
         boundaries_to_order = remaining_b, remaining_c
@@ -684,7 +639,8 @@ class Circle(Point):
                 # If not, we specify another start from the possible starts.
                 counter += 1
             # Print information about the innner boundary discovery process.
-            print("(Re)computed inner boundary {} time(s).".format(counter+2))
+            if not silent:
+                print("(Re)computed inner boundary {} time(s).".format(counter+2))
             # Store the inner boundaries results.
             ordered_b, ordered_c, remaining_b, remaining_c = ordered_boundaries
             inner_boundaries_l.append((ordered_b,ordered_c))
@@ -736,7 +692,7 @@ class Circle(Point):
         '''
         a = self.intersectChord(circle)
         A_self = self._circularSegment(self.r, a)
-        A_circle_2 = circle.circularSegment(a)
+        A_circle_2 = circle._circularSegment(circle.r, a)
         A_total = A_self+A_circle_2
         if show_segments:
             return [A_total,[A_self,A_circle_2]]
@@ -759,12 +715,13 @@ class Circle(Point):
         # Case for a cluster of 1 Circle.
         if len(self)==1:
             A = self.area()
-            return A
+            return float(A)
         
         # Case for a cluster of 2 Circles.
         if len(self)==2:
-            A = self[0].intersectArea(self[1])
-            return A
+            circ_A = sum(self.area())
+            intersect_A = self[0].intersectArea(self[1])
+            return float(circ_A - intersect_A)
         
         # Case for a cluster of 3 or more Circles.
         if len(self)>2:
@@ -861,9 +818,9 @@ class Circle(Point):
             # Total area #
             ##############
             if return_edge_cases:
-                return outer_A - all_holes_A, outer_edge_cp, inner_edge_cp 
+                return float(outer_A - all_holes_A), outer_edge_cp, inner_edge_cp 
             else:
-                return outer_A - all_holes_A
+                return float(outer_A - all_holes_A)
     
     def simArea(self, n_samples=None):
         '''
@@ -881,4 +838,4 @@ class Circle(Point):
         result = np.array([any(self.encompass(_)) for _ in random_p]).astype(int)
         mean = result.mean()
         approx_area = random_area*mean
-        return approx_area
+        return float(approx_area)

@@ -35,8 +35,9 @@ Point
 Circle
 ------
 
+* Cluster
 * Intersection
-* Intersection Cord
+* Intersection Chord
 * Circular Segment
 * Intersection Area
 
@@ -44,4 +45,4 @@ Circle
 More info
 =========
 
-Refer to the jupyter notebook for a detailed step-by-step explanation of the whole process.
+Refer to the jupyter notebook for a quick explanation of how to use it.
