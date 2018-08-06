@@ -28,18 +28,17 @@ Some examples of the classes' methods that are needed to achieve the *original g
 Point
 -----
 
-* Distance
-* Centroid
-* Polygon Area
-* Angle Offset
+* .distance() : For the distance between two points.
+* .centroid() : For the centroid of a number of points.
+* .angleBetween() : For the angle between two points and a vertex.
+* .polyArea() : For the area of a polygon.
 Circle
 ------
 
-* Cluster
-* Intersection
-* Intersection Chord
-* Circular Segment
-* Intersection Area
+* .intersect() : For the intersections of circles.
+* .get_cluster() : For extracting a cluster of circles.
+* .intersectArea() : For the intersection area of two circles.
+* .calcBoundaries() : For getting the boundaries of a cluster of circles.
 
 
 More info

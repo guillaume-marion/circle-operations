@@ -529,7 +529,7 @@ class Circle(Point):
                 # For the first addidition we take a look at the angle.
                 if first:
                     max_angle = max(angles)
-                    # If the angle is smaller than 180° this indicates a wrong start
+                    # If the angle is smaller than 270° this indicates a wrong start
                     #  and we return None so that the method can be repeated with
                     #  another index-seed.
                     if max_angle < 270:
@@ -634,7 +634,7 @@ class Circle(Point):
                 # Apply the method.
                 ordered_boundaries = self._orderBoundaries(boundaries_to_order, inner=True, start_index=selected_index)
                 #...there is actually a result.
-                if ordered_boundaries != None:
+                if ordered_boundaries != None: # So now the method results None if the angle<270° which is quite hacky and will break in a few cases!!!
                     break
                 # If not, we specify another start from the possible starts.
                 counter += 1
@@ -734,7 +734,7 @@ class Circle(Point):
             # We close the loop.
             ordered_all = Point([ordered_b[-1]]+ordered_b)
             # Compute the area of the polygon.
-            polygon_A = ordered_all.polygonArea()
+            polygon_A = ordered_all.polyArea()
             
             ### 1.b. We compute the Area shaved of the Circles when defining the polygon.
             # Get the ordered centerpoints.
@@ -746,7 +746,7 @@ class Circle(Point):
             segments = [ordered_all[[i,i+1]] for i in range(len(ordered_all)-1)]
             # We identify on which side the centerpoints lies of the segment (outwards or in).
             centroids = Point([_.centroid() for _ in segments])
-            distances = [float(ordered_cp[i].distance(_)) for i,_ in enumerate(centroids)] # This should actually be distances to the line-segment and not the centroid!
+            distances = [float(ordered_cp[i].distance(_)) for i,_ in enumerate(centroids)] # This should actually be distances to the line-segment and not the centroid!!!
             min_distances = [_.distance(centroids).min() for _ in ordered_cp]
             cp_outwards = np.array(distances)<=np.array(min_distances)
             # Combine both rules and keep track of those edge case cp's.
@@ -781,7 +781,7 @@ class Circle(Point):
                 # We close the loop.
                 ordered_all = Point([ordered_b[-1]]+ordered_b)
                 # Compute the area of the polygon.
-                inner_polygon_A = ordered_all.polygonArea()
+                inner_polygon_A = ordered_all.polyArea()
                 
                 ### 2.b. Included shaved area that needs to be removed from the inner polygon area.
                 # Get the ordered centerpoints.

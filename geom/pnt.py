@@ -89,7 +89,7 @@ class Point(np.ndarray):
     def __round__(self, decimals=0):
         '''
         Defines custome __round__ method, which we can use to return a class
-            compared to an array with .round().
+            compared to an array when using .round().
         '''
         rounded_array = self.round(decimals)
         rounded_class = self.__class__(rounded_array)
@@ -326,7 +326,7 @@ class Point(np.ndarray):
         return 0.5*np.abs(np.dot(m_point_ordered_x.T[0],np.roll(m_point_ordered_y.T[0],1))
                           -np.dot(m_point_ordered_y.T[0],np.roll(m_point_ordered_x.T[0],1)))
     
-    def polygonArea(self):
+    def polyArea(self):
         '''
         Returns:
             The area, as a numpy.ndarray, of the polygon bounded by the Points .
