@@ -3,8 +3,8 @@
 =================
 
 This repository implements basic circle operations in a couple of classes and methods. 
-The *original goal* was to create a function that calculates total area of overlapping circles (while overlapping areas would be included only once).
-It became quickly clear however that a more structured approach was needed. 
+The *original goal* was to create a function that calculates the total area of overlapping circles (while overlapping areas would be included only once).
+It became quickly clear, however that a more structured approach was needed. 
 Basic example usage::
 
     from geom.circl import Circle
