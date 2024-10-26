@@ -28,7 +28,7 @@ Main dependencies
 
 Functionalities
 ===============
-<img src="images/area.gif" width="100%" height="auto" style="max-width: 537px; max-height: 500px;" />
+<img src="images/area.gif" width="100%" height="auto" style="max-width: 300px;" />
 
 Some examples of the classes' methods that are needed to achieve the end goal:
 
@@ -51,6 +51,6 @@ Circle
 More info
 =========
 
-Refer to __./demo.ipynb__ for a mostly comprehensive how-to.
+Refer to __./notebooks/tutorial.ipynb__ for a mostly comprehensive how-to.
 
 <br>
