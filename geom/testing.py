@@ -1,8 +1,9 @@
 #################
 ### Intersect ###
-from geom.circl import Circle, Point
-from matplotlib import pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
+
+from geom.circl import Circle, Point
 
 c1 = Circle([6, 12, 4])
 c2 = Circle([10, 12, 4])
@@ -28,11 +29,12 @@ for p in intersectpoints:  # np.array(intersectpoints).reshape(-1,2):
 #################
 
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 #####################
 ### Encompassment ###
-from geom.circl import Circle, Point
-from matplotlib import pyplot as plt
-import numpy as np
+from geom.circl import Circle
 
 mc = Circle([c1, c2])
 
@@ -73,11 +75,12 @@ for p in random_p:
 #####################
 
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 #######################
 ### Circle clusters ###
-from geom.circl import Circle, Point
-from matplotlib import pyplot as plt
-import numpy as np
+from geom.circl import Circle
 
 mc1 = Circle.random(5, 10, 5, 25, 1, 3, 10)
 mc2 = Circle.random(20, 25, 5, 25, 1, 3, 10)
@@ -101,11 +104,12 @@ for i, resultc in enumerate(result):
 #######################
 
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 #########################################################
 ### correct index of intersections of cluster-results ###
-from geom.circl import Circle, Point
-from matplotlib import pyplot as plt
-import numpy as np
+from geom.circl import Circle
 
 plt.ioff()
 
@@ -145,11 +149,12 @@ plt.ion()
 #########################################################
 
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 #####################
 ### angle between ###
 from geom.circl import Circle, Point
-from matplotlib import pyplot as plt
-import numpy as np
 
 p = Point([[8, 8], [8, 12], [12, 12], [12, 8]])
 cp = Point([10, 10])
@@ -164,11 +169,12 @@ p.drop(i).orderedPoints(cp, p[i], return_angles=True)
 #####################
 
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 ###########################################
 ### Polygon encompass - point per point ###
 from geom.circl import Circle, Point
-from matplotlib import pyplot as plt
-import numpy as np
 
 poly = Point([[5, 5], [5, 10], [7.5, 7.5], [10, 10], [10, 8], [8, 6], [10, 5], [5, 5]])
 multip = Point.random(4, 11, 4, 11, 5000)
@@ -196,11 +202,12 @@ for i in range(2500):
 ###########################################
 
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 #####################################
 ### outer bound - random clusters ###
 from geom.circl import Circle, Point
-from matplotlib import pyplot as plt
-import numpy as np
 
 multic = Circle.random(5, 30, 5, 30, 1, 3, 100)
 
@@ -261,11 +268,12 @@ for i in range(multic.nr_clusters):
 #####################################
 
 
+import numpy as np
+from matplotlib import pyplot as plt
+
 #######################################
 ### Testing cluster area vs mc area ###
 from geom.circl import Circle, Point
-from matplotlib import pyplot as plt
-import numpy as np
 
 # Square without inner hole
 mc = Circle.random(15, 25, 15, 25, 0, 4, 30)

@@ -1,5 +1,6 @@
-from geom.circl import Point, Circle
 import matplotlib.pyplot as plt
+
+from geom.circl import Circle, Point
 
 mc = Circle(
     [

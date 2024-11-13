@@ -1,9 +1,10 @@
 # Local imports
-from geom.pnt import Point
-
 # Library imports
 import math
+
 import numpy as np
+
+from geom.pnt import Point
 
 
 class Circle(Point):
@@ -18,16 +19,16 @@ class Circle(Point):
         existing of multiple rows.
     """
 
-    ###############################
-    #### Dunder and properties ####
-    ###############################
+    #############################
+    #### Dunder & properties ####
+    #############################
 
     def __new__(cls, inputarray):
         """
         A Circle is created from a np.ndarray.
         The array can exist of a single or multiple circles, e.g.:
-        - Circle([5,7,1])
-        - Circle([[5,7,1],[13,4,1]])
+        >>> c = Circle([5,7,1])
+        >>> mc = Circle([[5,7,1],[13,4,1]])
         """
         obj = np.asarray(inputarray).view(cls)
         try:
@@ -69,54 +70,64 @@ class Circle(Point):
     def r(self, value):
         self[:, 2:] = value
 
-    #######################################
-    #### Random initialization methods ####
-    #######################################
+    #############################
+    #### Creation & Deletion ####
+    #############################
 
     @classmethod
-    def _random(cls, x_min, x_max, y_min, y_max, radius_min, radius_max, nr_circles):
+    def _random(cls, size, x_min, x_max, y_min, y_max, radius_min, radius_max):
         """
         Args:
+            size: The number of circles to be produced.
             x_min: Minium value for x-coordinates.
             x_max: Maximum value for x-coordinates.
             y_min: Minimum value for y-coordinates.
             y_max: Maximum value for y-coordinates.
             radius_min: Minimum value for radii.
             radius_max: Maximum value for radii.
-            nr_circles: The number of circles to be produced.
 
         Returns:
             A np.ndarray of random circles.
         """
-        xy = super(Circle, cls)._random(x_min, x_max, y_min, y_max, nr_circles)
-        r = np.random.uniform(radius_min, radius_max, nr_circles)
+        xy = super(Circle, cls)._random(
+            size=size, x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max
+        )
+        r = np.random.uniform(radius_min, radius_max, size)
         xyr = np.dstack([xy, r])
         return xyr
 
     @classmethod
-    def random(cls, x_min, x_max, y_min, y_max, radius_min, radius_max, nr_circles):
+    def random(
+        cls, size, x_min=0, x_max=10, y_min=0, y_max=10, radius_min=0.1, radius_max=1
+    ):
         """
         Args:
+            size: The number of Circles to be produced.
             x_min: Minium value for x-coordinates.
             x_max: Maximum value for x-coordinates.
             y_min: Minimum value for y-coordinates.
             y_max: Maximum value for y-coordinates.
             radius_min: Minimum value for radii.
             radius_max: Maximum value for radii.
-            nr_circles: The number of Circles to be produced.
 
         Returns:
             A random instance of (a) Circle(s).
         """
         xyr_values = cls._random(
-            x_min, x_max, y_min, y_max, radius_min, radius_max, nr_circles
+            size=size,
+            x_min=x_min,
+            x_max=x_max,
+            y_min=y_min,
+            y_max=y_max,
+            radius_min=radius_min,
+            radius_max=radius_max,
         )
         random_circle = cls(xyr_values)
         return random_circle
 
-    ######################
-    #### Core methods ####
-    ######################
+    ##############
+    #### Core ####
+    ##############
 
     def area(self):
         """
@@ -544,7 +555,7 @@ class Circle(Point):
             # From the boundaries/candidates we now exclude the boundary which
             #  matches the previous addition, leaving us with one or multiple
             #  boundaries to choose from as next addition.
-            ordered_remainders, angles = bp.drop(j).orderedPoints(cp, bp[j], True)
+            ordered_remainders, angles = bp.drop(j).order_clockwise(cp, bp[j], True)
             if inner:
                 # The next boundary is found by taking the last bp of the ordered bp's
                 boundary = ordered_remainders[-1]
@@ -649,7 +660,9 @@ class Circle(Point):
             #  all boundaries.
             polygon = round(Point([ordered_b[-1]] + ordered_b), 8)
             polygon_encompall = all(
-                [polygon.polyEncompass(round(_, 8)) for _ in boundaries_to_order[0]]
+                [
+                    polygon.polyEncompass(round(_, 8)) for _ in boundaries_to_order[0]
+                ]  # TODO: replace with Polygon.contains_all(_)
             )
             # ... the created polygon encompasses all boundaries.
             if polygon_encompall:
@@ -794,13 +807,15 @@ class Circle(Point):
             # We close the loop.
             ordered_all = Point([ordered_b[-1]] + ordered_b)
             # Compute the area of the polygon.
-            polygon_A = ordered_all.polyArea()
+            polygon_A = ordered_all.polygon_area()
 
             ### 1.b. We compute the Area shaved of the Circles when defining the polygon.
             # Get the ordered centerpoints.
             ordered_cp = [_.xy for _ in ordered_c]
             # Test each centerpoint for encompassment by the polygon.
-            cp_in_polygon = np.array([ordered_all.polyEncompass(_) for _ in ordered_cp])
+            cp_in_polygon = np.array(
+                [ordered_all.polyEncompass(_) for _ in ordered_cp]
+            )  # TODO: replace with Polygon.contains_all(_)
             cp_notin_polygon = cp_in_polygon == False
             # Create the segments from the closed loop boundaries.
             segments = [ordered_all[[i, i + 1]] for i in range(len(ordered_all) - 1)]
@@ -849,14 +864,16 @@ class Circle(Point):
                 # We close the loop.
                 ordered_all = Point([ordered_b[-1]] + ordered_b)
                 # Compute the area of the polygon.
-                inner_polygon_A = ordered_all.polyArea()
+                inner_polygon_A = ordered_all.polygon_area()
 
                 ### 2.b. Included shaved area that needs to be removed from the inner polygon area.
                 # Get the ordered centerpoints.
                 ordered_cp = [_.xy for _ in ordered_c]
                 # Test each centerpoint for encompassment by the polygon and keep track.
                 cp_in_polygon = np.array(
-                    [ordered_all.polyEncompass(_) for _ in ordered_cp]
+                    [
+                        ordered_all.polyEncompass(_) for _ in ordered_cp
+                    ]  # TODO: replace with Polygon.contains_all(_)
                 )
                 mask = cp_in_polygon
                 inner_edge_cp_l.append(Point([ordered_cp])[mask])

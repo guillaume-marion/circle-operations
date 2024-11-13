@@ -1,31 +1,26 @@
 # Library imports
-import math
 import numpy as np
+
+from geom.utils import atan2_v, degrees_v
 
 
 # Defining the Point class
 class Point(np.ndarray):
     """
-    The Point class is a child class of the numpy.ndarray. It includes a
-        number of methods which can be used to calculate metrics between sets
-        of coordinates such as distances, angles, ...
-    Note the difference in notation between (not applicable in arguments of methods):
-        - 'point' which at least represent a set of coordinates in a list, np.ndarray,...
-        - 'Point' which represents an instance of the class.
-    Also note that when we refer to Points we mean a single instance of the object
-        existing of multiple rows.
+    The Point class subclasses np.ndarray, for leveraging vectorized operations.
+    Accordingly note that a Point can thus represent one or multiple points.
     """
 
-    ###############################
-    #### Dunder and properties ####
-    ###############################
+    #############################
+    #### Dunder & properties ####
+    #############################
 
     def __new__(cls, inputarray):
         """
         A Point is created from a np.ndarray.
         The array can exist of a single or multiple points, e.g.:
-        - a = Point([5,7])
-        - b = Point([[5,7],[13,4]])
+        >>> p = Point([5,7])
+        >>> mp = Point([[5,7],[13,4]])
         """
         obj = np.asarray(inputarray).view(cls)
         try:
@@ -69,6 +64,10 @@ class Point(np.ndarray):
     def xy(self, value):
         self[:, :] = value
 
+    @property
+    def count(self):
+        return self.shape[0]
+
     def __getitem__(self, val):
         """
         If val is an int, then consider it as a row-selection which should
@@ -99,48 +98,46 @@ class Point(np.ndarray):
         rounded_class = self.__class__(rounded_array)
         return rounded_class
 
-    #######################################
-    #### Random initialization methods ####
-    #######################################
+    #############################
+    #### Creation & Deletion ####
+    #############################
 
     @staticmethod
-    def _random(x_min, x_max, y_min, y_max, nr_points):
+    def _random(size, x_min, x_max, y_min, y_max):
         """
         Args:
+            size: The number of points to be produced.
             x_min: Minium value for x-coordinates.
             x_max: Maximum value for x-coordinates.
             y_min: Minimum value for y-coordinates.
             y_max: Maximum value for y-coordinates.
-            nr_points: The number of points to be produced.
 
         Returns:
             A np.ndarray of random points.
         """
-        x = np.random.uniform(x_min, x_max, nr_points)
-        y = np.random.uniform(y_min, y_max, nr_points)
+        x = np.random.uniform(x_min, x_max, size)
+        y = np.random.uniform(y_min, y_max, size)
         xy = np.dstack([x, y])
         return xy
 
     @classmethod
-    def random(cls, x_min, x_max, y_min, y_max, nr_points):
+    def random(cls, size, x_min=0, x_max=10, y_min=0, y_max=10):
         """
         Args:
+            size: The number of Points to be produced.
             x_min: Minium value for x-coordinates.
             x_max: Maximum value for x-coordinates.
             y_min: Minimum value for y-coordinates.
             y_max: Maximum value for y-coordinates.
-            nr_points: The number of Points to be produced.
 
         Returns:
             A random instance of (a) Point(s).
         """
-        xy_values = cls._random(x_min, x_max, y_min, y_max, nr_points)
+        xy_values = cls._random(
+            size=size, x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max
+        )
         random_point = cls(xy_values)
         return random_point
-
-    ######################
-    #### Core methods ####
-    ######################
 
     def drop(self, row):
         """
@@ -165,217 +162,279 @@ class Point(np.ndarray):
         self_without_nan = self[mask, :]
         return self_without_nan
 
+    ##############
+    #### Core ####
+    ##############
+
     @staticmethod
-    def _distance(s_point_x, s_point_y, m_point_x, m_point_y):
+    def _distance(px, py, mpx, mpy):
         """
         Args:
-            s_point_x: A single x-coordinate as an int, float or numpy.ndarray.
-            s_point_y: A single y-coordinate as an int, float or numpy.ndarray.
-            m_point_x: A single or multiple x-coordinates as a numpy.ndarray.
-            m_point_y: A single or multiple y-coordinates as a numpy.ndarray.
+            px: One x-coordinate as a scalar or array.
+            py: One y-coordinate as a scalar or array.
+            mpx: One or multiple x-coordinates as an array.
+            mpy: One or multiple y-coordinates as an array.
 
-        Returns: The euclidean distance(s) between the s_point and m_point as
-            a numpy.ndarray.
+        Returns: The euclidean distance(s) between the point defined by [px, py] and the point(s) defined by [mpx, mpy].
         """
-        return np.sqrt((m_point_x - s_point_x) ** 2 + (m_point_y - s_point_y) ** 2)
+        return np.sqrt((mpx - px) ** 2 + (mpy - py) ** 2)
 
-    def distance(self, point):
+    def distance(self, other_points):
         """
         Args:
-            point: One or multiple Points.
+            other_point: another Point instance representing one (if self represents multiple points) or multiple points.
 
-        Returns: The euclidean distance(s),  as a numpy.ndarray, between self
-            and the (multiple) Point(s).
+        Returns: The euclidean distance(s) between self and the other point(s).
         """
-        s_point_x = self.x
-        s_point_y = self.y
-        m_point = point
-        m_point_x = m_point.x
-        m_point_y = m_point.y
+        assert (
+            self.count == 1 or other_points.count == 1
+        ), "When computing distances, only one of self or other_points can represent multiple points."
+        if self.count == 1:
+            p = self
+            mp = other_points
+        else:
+            p = other_points
+            mp = self
         return self._distance(
-            s_point_x=s_point_x,
-            s_point_y=s_point_y,
-            m_point_x=m_point_x,
-            m_point_y=m_point_y,
+            px=p.x,
+            py=p.y,
+            mpx=mp.x,
+            mpy=mp.y,
         )
 
     @staticmethod
-    def _angleOffset(s_point_x, s_point_y, m_point_x, m_point_y):
+    def _angle_to_align(px, py, mpx, mpy):
         """
         Args:
-            s_point_x: A single x-coordinate as an int, float or numpy.ndarray.
-            s_point_y: A single y-coordinate as an int, float or numpy.ndarray.
-            m_point_x: A single or multiple x-coordinates as a numpy.ndarray.
-            m_point_y: A single or multiple y-coordinates as a numpy.ndarray.
+            px: One x-coordinate as a scalar or array.
+            py: One y-coordinate as a scalar or array.
+            mpx: One or multiple x-coordinates as an array.
+            mpy: One or multiple y-coordinates as an array.
 
-        Returns: The angle at which the horizontal line needs to rotate
-            clockwise in order to match the line between the s_point and
-            the m_point.
+        Returns: The angle(s) at which (a) fully horizontal line(s) needs to rotate
+            clockwise in order to match the line(s) between the point defined by [px, py] and the point(s) defined by [mpx, mpy].
         """
-        atan2_v = np.vectorize(math.atan2)
-        degrees_v = np.vectorize(math.degrees)
-        dx = m_point_x - s_point_x
-        dy = m_point_y - s_point_y
+        dx = mpx - px
+        dy = mpy - py
         return degrees_v(atan2_v(dy, dx))
 
-    def angleOffset(self, point):
+    def angle_to_align(self, other_points):
         """
         Args:
-            point: One or multiple Points.
+            other_point: another Point instance representing one (if self represents multiple points) or multiple points.
 
-        Returns: The angles, as a numpy.ndarray, at which the horizontal line
-            needs to rotate clockwise in order to match the line between self and
-            the (multiple) Point(s).
+        Returns: The angle(s), at which the horizontal line(s)
+            needs to rotate clockwise in order to match the line(s) between self and
+            the other point(s).
         """
-        s_point_x = self.x
-        s_point_y = self.y
-        m_point = point
-        m_point_x = m_point.x
-        m_point_y = m_point.y
-        return self._angleOffset(
-            s_point_x=s_point_x,
-            s_point_y=s_point_y,
-            m_point_x=m_point_x,
-            m_point_y=m_point_y,
+        assert (
+            self.count == 1 or other_points.count == 1
+        ), "When computing angles, only one of self or other_points can represent multiple points.."
+        if self.count == 1:
+            p = self
+            mp = other_points
+        else:
+            p = other_points
+            mp = self
+        return self._angle_to_align(
+            px=p.x,
+            py=p.y,
+            mpx=mp.x,
+            mpy=mp.y,
         )
 
-    def angleBetween(self, point, starting_point):
+    def angle_between(self, point, other_points):
         """
         Args:
-            point: One or multiple Points.
-            starting_point: A Point from which the clockwise angle to the other
-                Points is calculated.
+            point: A single point from which the clockwise angle to the other point(s) is calculated.
+            other_points: One or multiple points.
 
-        Returns: The angles, as a np.ndarray, between the starting_point and the
-            Point(s) with self as vertex.
+        Returns: The angles between the point and the other
+            point(s), with self as vertex (vertices).
         """
-        angleOrigin = 180 - self.angleOffset(starting_point)
-        anglePoints = 180 - self.angleOffset(point)
+        assert (
+            point.count == 1
+        ), "When computing angles, only one of self or other_points can represent multiple points."
+        assert (
+            self.count == 1 or other_points.count == 1
+        ), "When computing angles, only one of self or other_points can represent multiple points."
+        angleOrigin = 180 - self.angle_to_align(point)
+        anglePoints = 180 - self.angle_to_align(other_points)
         anglePoints[anglePoints < angleOrigin] = (
             anglePoints[anglePoints < angleOrigin] + 360
         )
         return anglePoints - angleOrigin
 
     @staticmethod
-    def _centroid(m_point_x, m_point_y):
+    def _centroid(mpx, mpy):
         """
         Args:
-            m_point_x: Multiple x-coordinates as a numpy.ndarray.
-            m_point_y: Multiple y-coordinates as a numpy.ndarray.
+            mpx: One or multiple x-coordinates as an array.
+            mpy: One or multiple y-coordinates as an array..
 
-        Returns: The point of the centroid as a numpy.ndarray.
+        Returns: The centroid.
         """
-        n_points = len(m_point_x)
-        centroid = [m_point_x.sum() / n_points, m_point_y.sum() / n_points]
+        centroid = [mpx.sum() / mpx.size, mpy.sum() / mpx.size]
         return centroid
 
     def centroid(self):
         """
-        Returns: The centroid of the Points (i.e. self) as a single Point.
+        Returns: The centroid of self as a Point.
         """
-        m_point_x = self.x
-        m_point_y = self.y
-        centroid = self._centroid(m_point_x=m_point_x, m_point_y=m_point_y)
-        centroid_point = Point(centroid)
-        return centroid_point
+        centroid = self._centroid(mpx=self.x, mpy=self.y)
+        return Point(centroid)
 
-    @staticmethod
-    def _orderedIndex(some_angles):
+    def order_clockwise(self, start=None, center=None, return_angles=False):
         """
         Args:
-            some_angles: A least two angles in a np.ndarray.
-
-        Returns: The index, as a numpy.ndarray, of the angles in a clockwise order.
-        """
-        ordered_index = (some_angles).argsort(axis=0)
-        return ordered_index
-
-    def orderedPoints(self, centerpoint=None, start_from=None, return_angles=False):
-        """
-        Args:
-            centerpoint: Defaults to the centroid of self as the centerpoint for
-                the clock-pointer. Otherwise a given center Point is used.
-            start_from: Defaults to the horizontal line as starting point.
-                Else if given a Point, it will serve as the starting point
-                for computing the clockwise order.
+            start: The starting point for computing the clockwise order. Defaults to the horizontal line as starting point.
+            center: The center for the clock-pointer. Defaults to the centroid of self.
+            return_angles: Whether or not to return the angles used to order the points.
 
         Returns:
             The Points in a clockwise-ordered fashion.
         """
-        if centerpoint is None:
+        if center is None:
             centr = self.centroid()
         else:
-            centr = centerpoint
+            centr = center
 
-        if start_from is None:
-            angles = centr.angleOffset(self) * -1
+        if start is None:
+            angles = centr.angle_to_align(other_points=self) * -1
         else:
-            angles = centr.angleBetween(self, start_from)
+            angles = centr.angle_between(point=start, other_points=self)
 
-        ordered_index = self._orderedIndex(angles)
-        ordered_self = self[ordered_index][:, 0]
+        ordered_self = self[angles.argsort(axis=0)][:, 0]
         if return_angles:
             angles.sort()
             return ordered_self, angles
         else:
             return ordered_self
 
+
+class Polygon(Point):
+    """
+    A Polygon is a collection of ordered Points.
+    """
+
+    #############################
+    #### Dunder & properties ####
+    #############################
+
+    def __new__(cls, inputarray):
+        """
+        A Polygon is created from a np.ndarray.
+        The array exists of multiple points, e.g.:
+        >>> Polygon([[5,7],[13,4]])
+        """
+        obj = np.asarray(inputarray).view(cls)
+        try:
+            # Controlling for correct shape
+            obj - np.asarray([1, 1])
+            # Reshaping to columns
+            obj = obj.reshape(-1, 2)
+            # Controlling for minimum size
+            assert obj.shape[0] > 2
+            obj = obj.order_clockwise()
+            return obj
+        except:
+            raise ValueError("The input should be an array of shape (>2, 2).")
+
+    def __init__(self, inputarray):
+        """
+        We use the return from __new__ as self.
+        """
+        pass
+
+    def __getitem__(self, val):
+        """
+        If val is an int or results in fewer than 3 points, return a Point instance.
+        """
+        # Return a Point instance if the selection has fewer than 3 rows
+        if isinstance(val, int) or (
+            isinstance(val, slice)
+            and (
+                (val.stop if val.stop is not None else self.shape[0])
+                - (val.start if val.start is not None else 0)
+            )
+            < 3
+        ):
+            return Point(np.asarray(self)[val])
+        else:
+            return super(Point, self).__getitem__(val)
+
     @staticmethod
-    def _polyArea(m_point_ordered_x, m_point_ordered_y):
+    def _area(mpx, mpy):
         """
         Args:
-            m_point_ordered_x: Multiple x-coordinates in clockwise order
-                as a numpy.ndarray.
-            m_point_ordered_y: Multiple y-coordinates in clockwise order
-                as a numpy.ndarray.
+            mpx: Multiple x-coordinates in clockwise order.
+            mpy: Multiple y-coordinates in clockwise order.
 
-        Returns: The area, as a numpy.ndarray, of the polygon bounded by the points.
+        Returns: The area of the polygon bounded by the points.
         """
         return 0.5 * np.abs(
-            np.dot(m_point_ordered_x.T[0], np.roll(m_point_ordered_y.T[0], 1))
-            - np.dot(m_point_ordered_y.T[0], np.roll(m_point_ordered_x.T[0], 1))
+            np.dot(mpx.T[0], np.roll(mpy.T[0], 1))
+            - np.dot(mpy.T[0], np.roll(mpx.T[0], 1))
         )
 
-    def polyArea(self):
+    def area(self):
         """
         Returns:
-            The area, as a numpy.ndarray, of the polygon bounded by the Points .
+            The area of the polygon.
         """
-        m_point_ordered_x = self.x
-        m_point_ordered_y = self.y
-        A = self._polyArea(m_point_ordered_x, m_point_ordered_y)
-        return A
+        area = self._area(self.x, self.y).item()
+        return area
 
-    def polyEncompass(self, point, func=all):
+    def contains(self, points, return_points=True, include_vertices=True):
         """
         Args:
-            point: The point(s) which needs to be verified if encompassed by the
-                polygon desfined by self.
-            func: The aggregation function for the boolean list.
+            points (Point): A Point instance with one or multiple points to check for containment.
 
         Returns:
-            A boolean indicating encompassment of the Point by the polygon.
+            - Point instance containing only those points within the polygon.
         """
-        # Relabel point for conciseness.
-        mp = point
-        # Define the segments as a list of Points of 2 points.
-        segments = [self[[i, i + 1]] for i in range(len(self) - 1)]
-        # Receptacle for all ecompassment tests.
-        all_encompassments = []
+        # Ensure points is a Point instance
+        if not isinstance(points, Point):
+            raise TypeError("Input must be a Point instance.")
 
-        for p in mp:
-            # Number of crossing numbers.
-            nr_cn = 0
-            # For each segment...
-            for s0, s1 in segments:
-                # If there is an upward ..or.. downward crossing.
-                if (s0.y <= p.y and s1.y > p.y) or (s0.y > p.y and s1.y <= p.y):
-                    # We compute the edge-ray intersect x-coordinate.
-                    vt = (p.y - s0.y) / float(s1.y - s0.y)
-                    if p.x < s0.x + vt * (s1.x - s0.x):
-                        nr_cn += 1
-            overlap = np.array((p == self).all(axis=1)).any()
-            encompassment = bool(nr_cn % 2) or overlap
-            all_encompassments.append(encompassment)
+        # Get vertices of the polygon in flattened arrays
+        poly_x = self.x.flatten()
+        poly_y = self.y.flatten()
 
-        return func(all_encompassments)
+        # Repeat the polygon coordinates for each point
+        n = len(poly_x)
+        px = points.x.flatten()[:, np.newaxis]
+        py = points.y.flatten()[:, np.newaxis]
+
+        # Roll arrays for edge coordinates (xi, yi) -> (xj, yj) for each edge
+        xi, yi = poly_x, poly_y
+        xj, yj = np.roll(poly_x, -1), np.roll(poly_y, -1)
+
+        # Check if the point is within the y-bounds of each polygon edge
+        intersect = ((yi > py) != (yj > py)) & (
+            px < (xj - xi) * (py - yi) / (yj - yi) + xi
+        )
+
+        # Count intersections for each point to determine if inside
+        inside = intersect.sum(axis=1) % 2 == 1
+
+        # Check if points are vertices
+        if include_vertices:
+            # Using np.isin to check for vertex containment
+            points_tuples = [tuple(row) for row in points]
+            polygon_tuples = [tuple(row) for row in polygon]
+
+            # Use set intersection to find matching pairs
+            matching_coordinates = np.array(
+                list(set(points_tuples) & set(polygon_tuples))
+            )
+            inside |= vertex_contains
+
+        # Return a Point instance with contained points, or boolean array
+        return points[inside] if return_points else inside
+
+    def contains_any(self, points):
+        return any(self.contains(points, return_points=False))
+
+    def contains_all(self, points):
+        return all(self.contains(points, return_points=False))
