@@ -5,6 +5,7 @@ dependencies:
   - jupyter
   - matplotlib
   - numpy
+  - pre-commit
   - pytest
   - python
   - ruff
