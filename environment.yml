@@ -1,0 +1,10 @@
+name: circles
+dependencies:
+  - scipy
+  - ipywidgets
+  - jupyter
+  - matplotlib
+  - numpy
+  - pytest
+  - python
+  - ruff
