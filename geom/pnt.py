@@ -6,6 +6,8 @@ The Point class leverages vectorized operations from np.ndarray and provides
 additional functionality for working with points.
 """
 
+from typing import Optional, Union
+
 import numpy as np
 
 from geom.utils import atan2_v, degrees_v
@@ -75,7 +77,6 @@ class Point(np.ndarray):
         """
         pass
 
-    @property
     @property
     def x(self) -> np.ndarray:
         """

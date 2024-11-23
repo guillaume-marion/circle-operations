@@ -126,27 +126,6 @@ class TestPolygon(unittest.TestCase):
         self.assertEqual(po1.area(), 22.5)
         self.assertEqual(po2.area(), 25.0)
 
-    # def test_contains(self):
-    #     coords = [[0, 0], [5, 5], [0, 5], [9, 9]]
-    #     po1 = Polygon(coords)
-    #     coords.extend([[10, 10], [0, 2.5], [2.5, 5], [5, 6], [9, 8]])
-    #     mp2 = Point(coords)
-    #     print(po1.contains(mp2))
-    #     # self.assertEqual(po1.contains(mp2))
-    #     pass
-
 
 if __name__ == "__main__":
-
-    coords = [[0, 0], [5, 5], [0, 5], [9, 9]]
-    po1 = Polygon(coords)
-    coords2 = coords + [[10, 10], [0, 2.5], [8, 8], [5, 0]]
-    mp2 = Point(coords2)
-    # print(po1)
-    # print(mp2.order_clockwise())
-    # print(po1.contains(mp2, return_points=False, include_vertices=False))
-    print(mp2, "\n")
-    print(po1, "\n")
-    print(...)
-
     unittest.main()
