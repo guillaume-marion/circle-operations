@@ -1,6 +1,13 @@
-# Local imports
-# Library imports
+"""
+This module provides a custom Circle class that subclasses Point.
+The Circle class is designed to represent one or multiple circles in a 2D space.
+
+The Circle class leverages vectorized operations from Point and provides
+additional functionality for working with circles.
+"""
+
 import math
+from typing import Optional, Union
 
 import numpy as np
 
@@ -12,23 +19,47 @@ class Circle(Point):
     The Circle class is a child class of the Point. It includes a
         number of methods which can be used to calculate metrics between sets
         of coordinates+radius such as intersections, ....
-    Note the difference in notation between (not applicable in arguments of methods):
-        - 'circle' which at least represent a set of coordinates+radius in a list, array, ...
-        - 'Circle' which represents an instance of the class.
-    Also note that when we refer to Circles we mean a single instance of the object
-        existing of multiple rows.
-    """
 
-    #############################
-    #### Dunder & properties ####
-    #############################
+    A Circle can be created from a np.ndarray with shape (3,) or (*,3), where each row
+    represents a circle in 2D space with x, y coordinates and a radius.
 
-    def __new__(cls, inputarray):
-        """
-        A Circle is created from a np.ndarray.
-        The array can exist of a single or multiple circles, e.g.:
+    Attributes:
+        inputarray (np.ndarray): The input array used to create the Circle instance.
+
+    Properties:
+        xy: Access or set the x,y-coordinates of the circle(s).
+        r: Access or set the radius of the circle(s).
+        intersections: Store the intersection points between circles.
+        _clusters_indices: Store the indices of clustered circles.
+        nr_clusters: Store the number of clusters.
+        isclustered: Flag indicating if the circles are clustered.
+        iscluster: Flag indicating if the circle is a cluster.
+        isbounded: Flag indicating if the circle is bounded.
+        outer_boundaries: Store the outer boundaries of the cluster.
+        inner_boundaries: Store the inner boundaries of the cluster.
+
+    Methods:
+        area: Compute the area of the circle(s).
+        intersect: Compute the intersection points between circles.
+        intersectArea: Compute the intersecting area between two circles.
+
+    Examples:
         >>> c = Circle([5,7,1])
         >>> mc = Circle([[5,7,1],[13,4,1]])
+    """
+
+    def __new__(cls, inputarray: Union[np.ndarray, "Point"]):
+        """
+        Creates a new Circle instance from a np.ndarray.
+
+        Args:
+            inputarray (np.ndarray): The input array with shape (3,) or (*,3).
+
+        Returns:
+            Circle: A new Circle instance.
+
+        Raises:
+            ValueError: If the input array does not have the correct shape.
         """
         obj = np.asarray(inputarray).view(cls)
         try:
@@ -40,10 +71,14 @@ class Circle(Point):
         except:
             raise ValueError("The input should have the shape of a (3,) or (*,3) array")
 
-    def __init__(self, inputarray):
+    def __init__(self, inputarray: Union[np.ndarray, "Point"]):
         """
-        We add default parameters to control for clustering, etc.
-        We use the return from __new__ as self.
+        Initializes the Circle instance.
+
+        Note:
+            This method is not intended to be called directly. Instead, use the
+            __new__ method to create a new Circle instance. This is related to the
+            proper subclassing of Point / np.ndarray.
         """
         self.intersections = []
         self._clusters_indices = []
@@ -69,10 +104,6 @@ class Circle(Point):
     @r.setter
     def r(self, value):
         self[:, 2:] = value
-
-    #############################
-    #### Creation & Deletion ####
-    #############################
 
     @classmethod
     def _random(cls, size, x_min, x_max, y_min, y_max, radius_min, radius_max):
@@ -124,10 +155,6 @@ class Circle(Point):
         )
         random_circle = cls(xyr_values)
         return random_circle
-
-    ##############
-    #### Core ####
-    ##############
 
     def area(self):
         """

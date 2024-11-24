@@ -1,6 +1,6 @@
 # geom/__init__.py
 
-from .circl import Circle
-from .pnt import Point, Polygon
+from .circle import Circle
+from .point import Point, Polygon
 
 __all__ = ["Circle", "Point", "Polygon"]

@@ -41,7 +41,7 @@ class Point(np.ndarray):
         >>> mp = Point([[5,7],[13,4]])
     """
 
-    def __new__(cls, inputarray):
+    def __new__(cls, inputarray: np.ndarray):
         """
         Creates a new Point instance from a np.ndarray.
 
@@ -66,7 +66,7 @@ class Point(np.ndarray):
                 "The input should have the shape of a (2,) or (*,2) array."
             )
 
-    def __init__(self, inputarray):
+    def __init__(self, inputarray: np.ndarray):
         """
         Initializes the Point instance.
 
